@@ -141,6 +141,7 @@ async def send_message(thread_id: str, payload: MessageIn, user=Depends(get_curr
                 metadata={"thread_id": thread_id, "message_id": doc["id"]},
             )
     except Exception as exc:  # noqa: BLE001
+        pass  # Notification failure should not block operation
     return success_response(msg)
 
 

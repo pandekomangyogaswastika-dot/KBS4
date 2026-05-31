@@ -104,6 +104,7 @@ async def create_project(payload: ProjectIn, user=Depends(require_role("admin", 
     try:
         await notify_project_created(doc)
     except Exception as exc:  # noqa: BLE001
+        pass  # Email notification failure shouldn't block project creation
     # Phase 15: in-app notif to client + assigned staff
     try:
         recipients = list({*(doc.get("staff_ids") or []), doc.get("client_id")})
@@ -119,6 +120,7 @@ async def create_project(payload: ProjectIn, user=Depends(require_role("admin", 
         # Live update: notify project list watchers
         await inapp.broadcast_topic("projects", "project.created", {"id": doc["id"], "name": doc["name"]})
     except Exception as exc:  # noqa: BLE001
+        pass  # In-app notification failure shouldn't block project creation
     return success_response(serialize_doc(doc))
 
 
@@ -185,6 +187,7 @@ async def update_project(project_id: str, payload: ProjectPatch, user=Depends(re
                 metadata={"project_id": project_id},
             )
     except Exception as exc:  # noqa: BLE001
+        pass  # Notification failure should not block operation
     return success_response(serialize_doc(updated))
 
 
@@ -314,6 +317,7 @@ async def upload_document(project_id: str, file: UploadFile = File(...), user=De
         await inapp.broadcast_topic(f"project:{project_id}", "document.uploaded",
                                     {"document_id": doc["id"], "name": fname})
     except Exception as exc:  # noqa: BLE001
+        pass  # Notification failure should not block operation
     return success_response(serialize_doc(doc))
 
 
@@ -370,6 +374,7 @@ async def create_approval(project_id: str, payload: ApprovalIn, user=Depends(get
     try:
         await notify_approval_requested(project, doc, user)
     except Exception as exc:  # noqa: BLE001
+        pass  # Email notification failure shouldn't block approval creation
     # Phase 15: in-app notif to all admins + project staff + the client (if requestor wasn't them)
     try:
         recipients = set((project.get("staff_ids") or []))
@@ -391,6 +396,7 @@ async def create_approval(project_id: str, payload: ApprovalIn, user=Depends(get
             metadata={"project_id": project_id, "approval_id": doc["id"]},
         )
     except Exception as exc:  # noqa: BLE001
+        pass  # Notification failure should not block operation
     return success_response(serialize_doc(doc))
 
 
@@ -486,6 +492,7 @@ async def sign_approval(project_id: str, approval_id: str, payload: SignatureIn,
     try:
         await notify_approval_signed(project, approval, sig_doc)
     except Exception as exc:  # noqa: BLE001
+        pass  # Email notification failure shouldn't block signature
     # Phase 15: in-app + live update for approval modal close
     try:
         recipients = set((project.get("staff_ids") or []))
@@ -511,6 +518,7 @@ async def sign_approval(project_id: str, approval_id: str, payload: SignatureIn,
         await inapp.broadcast_topic(f"project:{project_id}", "approval.signed",
                                     {"approval_id": approval_id, "certificate_no": cert_no})
     except Exception as exc:  # noqa: BLE001
+        pass  # Notification failure should not block operation
     return success_response(serialize_doc(sig_doc))
 
 

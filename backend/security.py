@@ -77,3 +77,43 @@ def require_role(*allowed):
         return user
 
     return dep
+
+
+
+# Phase 17: HTTP Basic Auth for API documentation
+import secrets
+from fastapi.security import HTTPBasic
+from fastapi import status
+
+_basic = HTTPBasic()
+
+
+def verify_docs_credentials(username: str, password: str) -> bool:
+    """Verify basic auth credentials for API documentation access."""
+    correct_username = os.environ.get("DOCS_USERNAME", "admin")
+    correct_password = os.environ.get("DOCS_PASSWORD", "kti-docs-2025")
+    
+    # Use secrets.compare_digest to prevent timing attacks
+    username_match = secrets.compare_digest(username.encode("utf8"), correct_username.encode("utf8"))
+    password_match = secrets.compare_digest(password.encode("utf8"), correct_password.encode("utf8"))
+    
+    return username_match and password_match
+
+
+async def require_docs_auth(credentials: HTTPAuthorizationCredentials = Depends(_basic)) -> bool:
+    """Dependency untuk melindungi API documentation endpoints dengan HTTP Basic Auth."""
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    
+    if not verify_docs_credentials(credentials.username, credentials.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    
+    return True

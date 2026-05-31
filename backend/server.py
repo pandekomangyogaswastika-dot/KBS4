@@ -53,11 +53,99 @@ from demos.kn3.routers import inbound_receiving as kn3_inbound_router  # noqa: E
 from demos.kn3.routers import outbound_picking as kn3_outbound_router  # noqa: E402
 from demos.kn3.routers import document_templates as kn3_doc_router  # noqa: E402
 from seed_email_templates import seed_email_templates  # noqa: E402
-from security import require_role  # noqa: E402
+from security import require_role, require_docs_auth  # noqa: E402
 from cache import cache_stats, clear_all  # noqa: E402
 from fastapi import Depends  # noqa: E402
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html  # noqa: E402
+from fastapi.openapi.utils import get_openapi  # noqa: E402
 
-app = FastAPI(title="Kubus Teknologi Indonesia API")
+# Phase 17: OpenAPI configuration with comprehensive metadata
+app = FastAPI(
+    title="Kubus Teknologi Indonesia API",
+    description="""
+## 🚀 Kubus Teknologi Indonesia - Platform API
+
+Platform terintegrasi untuk manajemen proyek, CMS, assessment, dan layanan digital berbasis AI.
+
+### 🔐 Authentication
+
+API ini menggunakan **JWT Bearer Token** authentication untuk endpoint yang memerlukan authorization.
+
+**Flow:**
+1. Login via `POST /api/auth/login` dengan email & password
+2. Dapatkan `access_token` dan `refresh_token`
+3. Gunakan `access_token` di header: `Authorization: Bearer <token>`
+4. Refresh token menggunakan `POST /api/auth/refresh` ketika access token expired
+
+### 📚 Kategorisasi Endpoint
+
+- **Auth:** Authentication & authorization
+- **Content:** Public content (services, cases, blog, careers, tech)
+- **CMS:** Content management system (admin only)
+- **Leads/CRM:** Lead management & contact forms
+- **Assessment:** IT Solution Discovery assessment module
+- **AI:** AI advisor & assistant (Claude-powered)
+- **Projects:** Project management (client & staff)
+- **Billing:** Invoice & payment management
+- **Chat:** Real-time messaging between clients & staff
+- **Analytics:** Dashboard analytics (admin/staff only)
+- **SEO:** SEO optimization & AI-powered meta generation
+- **Integrations:** Third-party integration settings (email, payment, storage)
+- **Notifications:** Real-time notifications (WebSocket + REST)
+- **Search:** Global search across platform
+- **Media:** Media library & asset management
+- **Demo:** Demo sandbox session management
+
+### 🛡️ RBAC (Role-Based Access Control)
+
+**Roles:**
+- `admin`: Full access ke semua fitur
+- `staff`: Access ke management tools (projects, clients, analytics)
+- `client`: Access ke client portal (own projects, invoices, messages)
+
+### 📄 Response Format
+
+Semua response mengikuti envelope standard:
+
+**Success:**
+```json
+{
+  "success": true,
+  "data": { ... }
+}
+```
+
+**Error:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human readable message",
+    "details": []
+  }
+}
+```
+    """,
+    version="2.17.0",
+    contact={
+        "name": "Kubus Teknologi Indonesia",
+        "url": "https://kubustek.id",
+        "email": "info@kubustek.id"
+    },
+    license_info={
+        "name": "Proprietary",
+    },
+    servers=[
+        {
+            "url": os.environ.get("REACT_APP_BACKEND_URL", "http://localhost:8001"),
+            "description": "Production/Development Server"
+        }
+    ],
+    docs_url=None,  # Disable default /docs (we'll protect it manually)
+    redoc_url=None,  # Disable default /redoc
+    openapi_url=None,  # Disable default /openapi.json (we'll protect it manually)
+)
 
 # Phase 13: compress responses > 1KB for major bandwidth + LCP savings
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
@@ -196,6 +284,103 @@ async def admin_cache_flush(_user=Depends(require_role("admin"))):
     """Admin-only: manual flush of the public content cache."""
     clear_all()
     return success_response({"flushed": True})
+
+
+# --- Phase 17: Protected API Documentation Endpoints ------------------------
+@app.get("/api/docs", include_in_schema=False)
+async def get_swagger_documentation(_auth: bool = Depends(require_docs_auth)):
+    """Swagger UI documentation (protected dengan HTTP Basic Auth)."""
+    return get_swagger_ui_html(
+        openapi_url="/api/openapi.json",
+        title=f"{app.title} - Swagger UI",
+        swagger_ui_parameters={
+            "persistAuthorization": True,
+            "displayRequestDuration": True,
+            "filter": True,
+            "tryItOutEnabled": True,
+        }
+    )
+
+
+@app.get("/api/redoc", include_in_schema=False)
+async def get_redoc_documentation(_auth: bool = Depends(require_docs_auth)):
+    """ReDoc documentation (protected dengan HTTP Basic Auth)."""
+    return get_redoc_html(
+        openapi_url="/api/openapi.json",
+        title=f"{app.title} - ReDoc"
+    )
+
+
+@app.get("/api/openapi.json", include_in_schema=False)
+async def get_open_api_endpoint(_auth: bool = Depends(require_docs_auth)):
+    """OpenAPI schema JSON (protected dengan HTTP Basic Auth)."""
+    return custom_openapi()
+
+
+def custom_openapi():
+    """Custom OpenAPI schema dengan security schemes dan tag descriptions."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+        servers=app.servers,
+    )
+    
+    # Add security schemes
+    openapi_schema["components"]["securitySchemes"] = {
+        "BearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "JWT access token dari endpoint `/api/auth/login`. Format: `Bearer <access_token>`"
+        },
+        "BasicAuth": {
+            "type": "http",
+            "scheme": "basic",
+            "description": "HTTP Basic Authentication untuk akses dokumentasi API"
+        }
+    }
+    
+    # Add comprehensive tag descriptions
+    openapi_schema["tags"] = [
+        {"name": "Auth", "description": "🔐 Authentication & Authorization - Login, logout, refresh token, dan user management"},
+        {"name": "Content", "description": "📄 Public Content - Services, cases, blog, careers, tech stack (read-only, no auth required)"},
+        {"name": "CMS", "description": "✏️ Content Management System - CRUD operations untuk semua konten (admin/staff only)"},
+        {"name": "Leads/CRM", "description": "📞 Lead Management - Contact forms, lead tracking, dan CRM (admin/staff only)"},
+        {"name": "Assessment", "description": "📋 IT Solution Discovery - Assessment template management dan submission tracking"},
+        {"name": "AI", "description": "🤖 AI Advisor & Assistant - Claude-powered conversational AI (public + portal)"},
+        {"name": "Projects", "description": "📊 Project Management - Projects, milestones, documents, approvals, e-signature"},
+        {"name": "Billing", "description": "💰 Invoice & Payment - Billing management untuk client projects"},
+        {"name": "Chat", "description": "💬 Real-time Messaging - Communication between clients and staff"},
+        {"name": "Analytics", "description": "📈 Dashboard Analytics - Lead funnel, revenue trends, AI usage (admin/staff only)"},
+        {"name": "SEO", "description": "🔍 SEO Optimization - AI-powered meta generation, SEO scoring, sitemap/robots.txt"},
+        {"name": "Integrations", "description": "🔌 Integration Settings - Email, payment gateway, object storage configuration (admin only)"},
+        {"name": "Notifications", "description": "🔔 Real-time Notifications - WebSocket + REST API untuk in-app notifications"},
+        {"name": "Search", "description": "🔎 Global Search - RBAC-safe search across CMS content dan portal data"},
+        {"name": "Media", "description": "🖼️ Media Library - Asset management, upload, folders (admin/staff only)"},
+        {"name": "Demo", "description": "🎮 Demo Sandbox - Session management untuk isolated product demos"},
+    ]
+    
+    # Filter out demo KN3 internal endpoints dari schema
+    filtered_paths = {}
+    for path, path_item in openapi_schema.get("paths", {}).items():
+        # Exclude /api/demo/kn3/* internal endpoints (tapi keep /api/demo/sessions)
+        if path.startswith("/api/demo/kn3/"):
+            continue
+        filtered_paths[path] = path_item
+    
+    openapi_schema["paths"] = filtered_paths
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+# Set custom OpenAPI function
+app.openapi = custom_openapi
 
 
 @app.on_event("startup")

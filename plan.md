@@ -23,6 +23,12 @@
     - **Full sandbox** (create/edit/delete) dalam **session terisolasi**
     - **Gated demo** (nama+email) + **lead capture CTA** setelah demo
     - Konten demo dapat **dikonfigurasi admin** (routing/link, enable/disable, label)
+  - **Phase 17 (Tier 2): API Documentation (OpenAPI/Swagger UI)**
+    - Dokumentasi API interaktif ("Try it out") dengan dukungan **JWT Bearer**
+    - Proteksi akses dokumentasi dengan **HTTP Basic Auth**
+    - Grouping endpoint by **tags** (Auth/CMS/Projects/Billing/Chat/SEO/Analytics/Notifications/Integrations, dll)
+    - Menyertakan **request/response examples** + **error response schemas**
+    - **Scope**: Public API + Portal endpoints (exclude demo KN3 internal)
 
 - Build on the existing **governance foundation** (KTI_00–13, ENTITY_REGISTRY, scripts) to keep SSOT clear and prevent duplication/conflicts.
 - Follow: **Test core in isolation → fix until works → build app → test incrementally**.
@@ -40,14 +46,18 @@
     - All 3rd-party integrations must be **configurable via admin settings** (provider selection + credentials + enable/disable).
     - Support **mock providers** for development/testing without external accounts.
 
-**Current status (overall):** Platform delivered through **Phase 15** ✅ ALL PHASES COMPLETE.
-- ✅ Phase 9–15 selesai semuanya.
+**Current status (overall):** Platform delivered through **Phase 16** ✅ ALL CORE PHASES COMPLETE.
+- ✅ Phase 0–15 selesai semuanya.
 - ✅ **Phase 15: Real-time Notifications via WebSocket — COMPLETE** (2026-05-31)
   - Scope delivered: Toast + Bell + persisted MongoDB + multi-portal (admin/staff/client) + live updates
   - Triggers: lead.created, project.created/status_changed/assigned, approval.requested/signed, invoice.created/status_changed, document.uploaded, chat.message
   - Testing: Backend 93% (1 minor: GET /api/leads returns 405 by design), Frontend 100%, Overall 96%
+- ✅ **Phase 16: Demo Sandbox Engine (Pilot: KN3 Smart WMS) — COMPLETE** (2026-05-31)
+  - Demo flow: Case CTA → Gate form (lead capture) → session created → `/demo/kn3?session=...` loads lazily
+  - Isolation: per-session MongoDB database `demo_kn3_{short_id}` + TTL cleanup
+  - Testing: iteration_13 Backend 100% + Frontend 100% (E2E)
 
-**Next major work:** **Phase 16 Demo Sandbox Engine** (pilot: **KN3 Smart WMS**).
+**Next major work:** **Phase 17 API Documentation (OpenAPI/Swagger UI)**.
 
 ---
 
@@ -330,145 +340,136 @@ Implemented routers:
 
 ---
 
-## Phase 16 (Tier 2) — Demo Sandbox Engine (Web Product Simulation/Prototype) 🟡 PLANNED
+## Phase 16 (Tier 2) — Demo Sandbox Engine (Web Product Simulation/Prototype) ✅ COMPLETED
 
 ### Phase 16.0 Scope (confirmed)
 - **Type:** Sandboxed Mini‑App (fully functional, limited scope) + Guided Tour
 - **Interaction:** Full sandbox (create/edit/delete) dalam session terisolasi
-- **Content:** Admin‑configurable via CMS (enable, label, route/link)
+- **Content:** Admin‑configurable via CMS (enable, label, slug, timeout)
 - **Lead gen:**
   - **Gated demo** (nama + email) sebelum akses
-  - **Lead capture CTA** setelah user mencoba demo
+  - Lead tercatat ke `crm_leads` (source: `demo_gate`)
 - **Pilot demo:** KN3 (Smart WMS)
 - **Demo role:** Admin (full access)
-- **Demo data:** dibuat **generic** (hindari nama/identitas PT. Kain Nusantara)
+- **Demo data:** generic (tanpa identitas PT tertentu)
 - **Language:** Indonesian only (v1)
-- **Architecture:** Copy KN3 code into KBS3, lalu adapt:
-  - auth → demo session token (bukan login)
-  - API prefix → /api/demo/wms/*
-  - MongoDB session isolation → per-session namespace + TTL cleanup
 
-### Phase 16A — Demo Session Engine (Backend Infra)
-**Goal:** membuat engine session demo yang aman, terisolasi, dan auto-clean.
+### Phase 16A — Demo Session Engine (Backend Infra) ✅ DONE
+**Delivered**
+- `demo_sessions` TTL-based registry (90 menit)
+- Endpoint:
+  - `POST /api/demo/sessions` create session + seed + lead
+  - `GET /api/demo/sessions/{id}` validate + remaining_minutes
+  - `DELETE /api/demo/sessions/{id}` cleanup
+  - `GET /api/demo/sessions` list (admin/staff)
+- Isolation strategy: per-session **MongoDB database** `demo_kn3_{short_id}`
 
-**User stories**
-1. Sebagai visitor, saya bisa mengakses demo setelah mengisi nama+email.
-2. Sebagai sistem, demo data harus terisolasi per session agar visitor tidak saling mengganggu.
-3. Sebagai sistem, demo harus auto-expire agar database tidak menumpuk.
+### Phase 16B — KN3 Backend Router Mounting (API prefix + session aware) ✅ DONE
+- Prefix: `/api/demo/kn3/*`
+- Request-scoped DB switching via middleware + ContextVar
+- All major KN3 endpoints operational
 
-**Steps**
-- Data model (SSOT): `demo_sessions`:
-  - `id`, `case_slug`, `demo_key` (mis: `kn3_wms`), `created_at`, `expires_at`, `status`
-  - `lead_id` (optional), `ip_hash` (optional), `ua_hash` (optional)
-  - Index TTL di `expires_at`
-- Endpoint inti:
-  - `POST /api/demo/sessions` (anonymous): create session + (optional) create lead
-  - `GET /api/demo/sessions/{id}`: validate active
-  - `POST /api/demo/sessions/{id}/renew` (optional): extend TTL (rate-limited)
-- Namespace isolation:
-  - Semua query KN3 router membaca `X-Demo-Session: <id>` dan menggunakan collection prefix `demo_<id>__<collection>` atau `demo_db.get_collection(name)` wrapper.
-- Seeding:
-  - Port `seed_realistic.py` logic dan ubah jadi **generic seed** (nama perusahaan, warehouse, customers, products) via parameter.
+### Phase 16C — KN3 Frontend Integration (React, code-splitting) ✅ DONE
+- `frontend/src/demos/kn3/*` ported
+- `/demo/kn3?session=...` lazy loaded
+- Demo session validation in `DemoPage`
 
-**Security**
-- Session ID random UUIDv4 (unpredictable)
-- Rate limit create session per IP
-- No admin JWT needed (demo uses session token)
+### Phase 16D — KBS3 Case Study Integration (Gating + Admin Config) ✅ DONE
+- `cms_cases` extended:
+  - `demo_enabled`, `demo_slug`, `demo_label_id`, `demo_timeout_minutes`
+- Public CaseDetail shows CTA → Gate form → redirect to demo
 
-### Phase 16B — KN3 Backend Router Mounting (API prefix + session aware)
-**Goal:** copy router KN3 tapi tidak bentrok dengan KBS3 `/api/*`.
+### Phase 16E — Polish (Lead capture + UX) ✅ DONE
+- DemoBanner: label MODE DEMO + timer + exit + CTA
+- Gate form capture name/email/company
 
-**Steps**
-- Mount KN3 routers di prefix khusus: `/api/demo/wms/*`
-- Adapt dependencies:
-  - Replace `get_db()` calls dengan `get_demo_db(session_id)` wrapper
-  - Ensure all writes go to namespaced collections
-- Add "demo admin" identity (virtual user) untuk audit fields:
-  - `actor_id="demo_admin"`, `actor_role="admin"`
+### Phase 16 Testing (mandatory) ✅ PASS
+- E2E test report: `/app/test_reports/iteration_13.json`
+- Backend: 100% (9/9)
+- Frontend: 100%
+- Regression: none
 
-### Phase 16C — KN3 Frontend Integration (React, code-splitting)
-**Goal:** demo tidak membebani initial load public site.
+---
 
-**Steps**
-- Copy KN3 frontend ke folder baru:
-  - `frontend/src/demos/kn3/*`
-- Implement entrypoint `KN3DemoApp`:
-  - Read `session` dari query param
-  - Setup axios base URL to KBS3 backend
-  - Add header `X-Demo-Session`
-  - Replace login screen dengan `DemoSessionGuard`
-- Code splitting:
-  - Routing demo via `React.lazy(() => import('@/demos/kn3/KN3DemoApp'))`
-  - Demo assets only load when user enters `/demo/kn3`
-- Guided Tour:
-  - Reuse `tourDefinitions.js` dari KN3
-  - Auto-start tour ketika demo pertama kali dibuka
-- Bahasa:
-  - Indonesian only (no i18n work in v1 demo)
+## Phase 17 (Tier 2) — API Documentation (OpenAPI/Swagger UI) 🟡 PLANNED
 
-### Phase 16D — KBS3 Case Study Integration (Gating + Admin Config)
-**Goal:** admin bisa mengaktifkan demo per studi kasus + mengatur routing/link.
+### Phase 17.0 Scope (confirmed)
+- **Scope:** hanya **Public API + Portal endpoints**
+  - Include: auth, content, cms, leads, assessment, ai, projects, billing, chat, analytics, seo, integrations, notifications, search, media
+  - Exclude: demo KN3 internal `/api/demo/kn3/*` (boleh tetap ada di backend, tapi disembunyikan dari docs)
+- **Endpoint docs UI:** `/api/docs`
+- **Access control:** **HTTP Basic Auth** untuk `/api/docs` (Opsi A)
+- **Interactive testing:** enable **Try it out** dengan **JWT Bearer** auth support
+- **Styling:** default Swagger UI
+- **Quality:** include request/response examples, error schema, tags grouping
+
+### Phase 17A — OpenAPI Metadata + Tagging
+**Goal:** OpenAPI schema rapi dan mudah dinavigasi.
 
 **Steps**
-- Extend `cms_cases` schema:
-  - `demo_enabled: bool`
-  - `demo_route: string` (mis. `/demo/kn3` atau `/demo/wms`)
-  - `demo_label: string` (button label)
-  - `demo_timeout_minutes: number`
-  - `demo_key: string` (maps to backend demo implementation)
-- Update Admin CMS UI:
-  - form fields untuk demo
-  - validation: route must start with `/demo/`
-- Public CaseDetailPage:
-  - If `demo_enabled` show button “Coba Demo”
-  - Click → open GateForm (nama+email)
-  - On submit → `POST /api/demo/sessions` → redirect ke `demo_route?session=<id>`
+- Tambahkan OpenAPI metadata: title, description, version, contact
+- Definisikan tags: Auth, CMS, Content, Leads/CRM, Assessment, AI, Projects, Billing, Chat, Analytics, SEO, Integrations, Notifications, Search, Media
+- Pastikan tiap router punya `tags=[...]`, `summary`, dan `description` untuk endpoint penting
 
-### Phase 16E — Polish (Lead capture + UX)
-- Lead capture banner/modal setelah:
-  - (A) 2 menit in-demo, atau
-  - (B) user menyelesaikan guided tour
-- CTA: “Minta konsultasi / Minta proposal”
-- Optional: add analytics event tracking (Phase 10 pipeline)
+### Phase 17B — Security Schemes (JWT Bearer) untuk "Try it out"
+**Goal:** user internal bisa melakukan testing endpoint langsung dari Swagger.
 
-### Phase 16 Testing (mandatory)
-- Backend:
-  - Create demo session → TTL created
-  - Namespaced write/read works
-  - Expired session returns 410/401
-- Frontend:
-  - Gated access flow works
-  - Demo loads via lazy route only
-  - Guided tour runs
-- Regression: public pages + portals unaffected
+**Steps**
+- Tambahkan `HTTPBearer` security scheme di OpenAPI
+- Annotate endpoint yang membutuhkan JWT dengan security requirement
+- Pastikan refresh/access token flow terdokumentasi
+
+### Phase 17C — Protect `/api/docs` dengan Basic Auth
+**Goal:** docs tidak open ke publik umum.
+
+**Steps**
+- Implement dependency Basic Auth untuk docs endpoints
+- Credentials dari env:
+  - `DOCS_USERNAME`
+  - `DOCS_PASSWORD`
+- Protect `/api/docs`, `/api/redoc`, dan `/api/openapi.json`
+
+### Phase 17D — Examples + Error Response Schemas
+**Goal:** dokumentasi usable untuk developer dan mengurangi trial/error.
+
+**Steps**
+- Tambahkan Pydantic response models untuk endpoint utama
+- Tambahkan `examples` pada request body
+- Definisikan envelope error standar (KTI_05) sebagai schema
+- Tambahkan response examples untuk status 200/201 dan error (401/403/404/422)
+
+### Phase 17 Testing (mandatory)
+- Verifikasi `/api/docs` meminta basic auth
+- Verifikasi `/api/openapi.json` juga ter-protect
+- Verifikasi JWT Bearer input muncul di Swagger UI dan bisa dipakai untuk "Try it out"
+- Verifikasi endpoints demo KN3 tidak tampil (atau minimal tidak tercampur dalam grouping)
 
 ---
 
 ## 3) Next Actions (Immediate)
-**Tier 1 COMPLETE** ✅ **Tier 2 Phase 15 COMPLETE** ✅
+**Tier 1 COMPLETE** ✅ **Tier 2 Phase 15–16 COMPLETE** ✅
 1. ✅ Phase 12: Integrations Settings + Email Notifications (DONE — iteration_8 PASS)
 2. ✅ Phase 13: Performance Optimization (DONE — iteration_9 PASS)
 3. ✅ Phase 14: Advanced Search (DONE — iteration_10 100% PASS)
 4. ✅ Phase 15: Real-time Notifications WebSocket (DONE — iteration_11 96% PASS, 100% frontend)
+5. ✅ Phase 16: Demo Sandbox Engine (KN3) (DONE — iteration_13 100% PASS)
 
 **Next build target:**
-5. 🟡 **Phase 16 (Pilot): Demo Sandbox Engine for KN3 Smart WMS**
+6. 🟡 **Phase 17: API Documentation (OpenAPI/Swagger UI)**
 
-**Tier 2 remaining (after Phase 16 — menunggu konfirmasi user):**
+**Tier 2 remaining (after Phase 17 — menunggu konfirmasi user):**
 - Dark/Light theme toggle (ambient + persistent user preference)
 - Multi-tenant support / Custom branding per-client (sub-domain whitelabel)
 - Advanced analytics (funnels/cohort/retention)
 - Mobile PWA
 - Payment gateway aktivasi (Midtrans/Xendit) — skema config sudah disiapkan di Phase 12
 - Optional: object storage migration ke S3/R2 (config sudah disiapkan di Phase 12)
+- Scaling Demo Sandbox: tambah demo mini-app lain di atas engine Phase 16
 
 **SSOT docs to update (mandatory)**
-- Update `ENTITY_REGISTRY.md`:
-  - add `demo_sessions` (+ possible `demo_events` if tracking interactions)
-  - ensure `notification_preferences`, `integration_settings`, `email_outbox`, `email_events`, `email_templates`
-- Update `docs/KTI_09_NAVIGATION_MAP.md`:
-  - include `/demo/*` routes
-  - include admin CMS demo fields location
+- Pastikan `ENTITY_REGISTRY.md` tetap up-to-date (demo_sessions sudah terdaftar)
+- Pastikan `docs/KTI_09_NAVIGATION_MAP.md` tetap mencakup `/demo/*` routes
+- (Opsional) tambahkan catatan akses docs (basic auth) ke docs governance
 
 **Catatan dependency / environment:**
 - Container Node.js = `20.20.2`.
@@ -490,12 +491,12 @@ Implemented routers:
 - Phase 13: measurable performance improvements without breaking visuals.
 - Phase 14: global search works with correct RBAC scoping; no data leakage.
 - Phase 15: real-time notifications stable (WS + REST + persisted).
-- **Phase 16 (Demo Sandbox Engine):**
-  - User dapat membuka demo dari studi kasus dengan gating name+email
-  - Demo **tidak membebani initial load** (lazy route + code splitting)
-  - Session sandbox **terisolasi** (create/edit/delete aman)
-  - Session auto-expire (TTL) dan tidak menumpuk DB
-  - Admin bisa mengaktifkan/menonaktifkan demo per studi kasus dan mengatur route/link
-  - Guided tour berjalan dan membantu user menyelesaikan flow demo
-  - Lead capture CTA muncul dan leads tercatat
+- Phase 16: demo sandbox engine stable, isolated, lazily loaded, lead capture works.
+- **Phase 17 (API Documentation):**
+  - `/api/docs` tersedia dan **terproteksi Basic Auth**
+  - OpenAPI schema rapi: tags grouping, summary/description memadai
+  - "Try it out" berjalan dengan JWT Bearer
+  - Request/response examples tampil
+  - Error envelope (KTI_05) terdokumentasi
+  - Endpoint demo KN3 internal tidak mengganggu scope docs
 - Every phase ends with `testing_agent_v3` and all reported bugs fixed (or explicitly accepted as tech debt).

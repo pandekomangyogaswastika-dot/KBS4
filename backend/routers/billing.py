@@ -88,6 +88,7 @@ async def create_invoice(payload: InvoiceIn, user=Depends(require_role("admin", 
     try:
         await notify_invoice_created(doc)
     except Exception as exc:  # noqa: BLE001
+        pass  # Notification failure should not block operation
     # Phase 15: in-app notif to the invoice client
     try:
         if doc.get("client_id"):
@@ -101,6 +102,7 @@ async def create_invoice(payload: InvoiceIn, user=Depends(require_role("admin", 
                 metadata={"invoice_id": doc["id"], "amount": doc.get("amount"), "currency": doc.get("currency")},
             )
     except Exception as exc:  # noqa: BLE001
+        pass  # Notification failure should not block operation
     return success_response(serialize_doc(doc))
 
 
@@ -139,6 +141,7 @@ async def update_invoice(invoice_id: str, payload: InvoicePatch, user=Depends(re
         try:
             await notify_invoice_overdue(updated)
         except Exception as exc:  # noqa: BLE001
+            pass  # Notification failure should not block operation
     # Phase 15: in-app notification on any status change to client
     try:
         if payload.status and updated and updated.get("client_id"):
@@ -153,4 +156,5 @@ async def update_invoice(invoice_id: str, payload: InvoicePatch, user=Depends(re
                 metadata={"invoice_id": invoice_id, "status": payload.status},
             )
     except Exception as exc:  # noqa: BLE001
+        pass  # Notification failure should not block operation
     return success_response(serialize_doc(updated))
