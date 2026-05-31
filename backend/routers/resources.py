@@ -50,17 +50,17 @@ class ResourceResponse(BaseModel):
     slug: str
     title: BilingualField
     type: str
-    cover: Optional[str]
+    cover: Optional[str] = None
     description: BilingualField
     file_url: str
-    file_size: Optional[int]
+    file_size: Optional[int] = None
     gated: bool
     download_count: int
     tags: List[str]
-    published_at: Optional[str]
+    published_at: Optional[str] = None
     status: str
     created_at: str
-    updated_at: Optional[str]
+    updated_at: Optional[str] = None
 
 @router.get("/", response_model=List[ResourceResponse])
 async def get_resources(

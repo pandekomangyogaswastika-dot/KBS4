@@ -40,11 +40,11 @@ class FaqResponse(BaseModel):
     category: str
     question: BilingualField
     answer: BilingualField
-    related_service_id: Optional[str]
+    related_service_id: Optional[str] = None
     order: int
     status: str
     created_at: str
-    updated_at: Optional[str]
+    updated_at: Optional[str] = None
 
 @router.get("/", response_model=List[FaqResponse])
 async def get_faqs(

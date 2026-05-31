@@ -48,15 +48,15 @@ class PackageResponse(BaseModel):
     name: BilingualField
     tier: str
     services_included: List[str]
-    price_from: Optional[int]
-    duration: Optional[str]
+    price_from: Optional[int] = None
+    duration: Optional[str] = None
     features: List[BilingualField]
     popular: bool
     cta_label: Optional[BilingualField]
     order: int
     status: str
     created_at: str
-    updated_at: Optional[str]
+    updated_at: Optional[str] = None
 
 @router.get("/", response_model=List[PackageResponse])
 async def get_packages(db=Depends(get_db)):

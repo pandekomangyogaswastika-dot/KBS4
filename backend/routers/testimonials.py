@@ -48,20 +48,20 @@ class TestimonialUpdate(BaseModel):
 
 class TestimonialResponse(BaseModel):
     id: str
-    client_id: Optional[str]
+    client_id: Optional[str] = None
     person_name: str
     person_role: BilingualField
     company: str
     quote: BilingualField
-    rating: Optional[int]
-    video_url: Optional[str]
-    case_id: Optional[str]
-    photo_url: Optional[str]
+    rating: Optional[int] = None
+    video_url: Optional[str] = None
+    case_id: Optional[str] = None
+    photo_url: Optional[str] = None
     featured: bool
     order: int
     status: str
     created_at: str
-    updated_at: Optional[str]
+    updated_at: Optional[str] = None
 
 @router.get("/", response_model=List[TestimonialResponse])
 async def get_testimonials(
