@@ -1,62 +1,30 @@
 [
   {
-    "content": "Phase 19A: Testimonials - Create cms_testimonials collection + backend router",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 19A: Testimonials - Build admin CMS CRUD page",
+    "content": "Phase 19: Create all admin CMS pages (Testimonials, Legal, FAQ, Packages, Resources)",
     "status": "in_progress"
   },
   {
-    "content": "Phase 19A: Testimonials - Create public testimonial components + homepage integration",
+    "content": "Phase 19: Create all public pages (FAQ, Pricing, About, Resources, Legal)",
     "status": "pending"
   },
   {
-    "content": "Phase 19B: Legal Pages - Create cms_legal_pages collection + backend router",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 19B: Legal Pages - Build admin CMS CRUD + public pages (/privacy-policy, /terms)",
+    "content": "Phase 19: Create testimonial components + homepage integration",
     "status": "pending"
   },
   {
-    "content": "Phase 19B: Legal Pages - Add footer links + form consent disclaimers",
+    "content": "Phase 19: Update App.js routes + PublicLayout footer",
     "status": "pending"
   },
   {
-    "content": "Phase 19C: FAQ - Create cms_faq collection + backend router",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 19C: FAQ - Build admin CMS CRUD + public /faq page",
+    "content": "Phase 19: Update ENTITY_REGISTRY.md + KTI_09_NAVIGATION_MAP.md",
     "status": "pending"
   },
   {
-    "content": "Phase 19D: Pricing - Create cms_packages collection + backend router",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 19D: Pricing - Build admin CMS CRUD + public /pricing page",
+    "content": "Phase 19: Create seed data script",
     "status": "pending"
   },
   {
-    "content": "Phase 19E: About Page - Create dedicated /about page",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 19F: Resources - Create cms_resources collection + backend router + admin CRUD + public page",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 19G: Update ENTITY_REGISTRY.md + KTI_09_NAVIGATION_MAP.md",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 19H: Seed initial data for all new collections",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 19I: End-to-end testing + SEO validation",
+    "content": "Phase 19: Testing + validation",
     "status": "pending"
   }
 ]

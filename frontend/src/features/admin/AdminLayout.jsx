@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Inbox, Users as UsersIcon, LogOut, Globe, Menu, ShieldCheck, Image as ImageIcon,
   Boxes, Briefcase, FileText, Cpu, Building2, LayoutTemplate, Settings, FolderKanban, ClipboardList,
   MessageSquare, BotMessageSquare, BarChart3, Search, Plug, Mailbox, MonitorPlay,
+  Quote, Scale, HelpCircle, Package, BookOpen,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
@@ -61,6 +62,12 @@ function useNav(role) {
         { to: "/portal/admin/cms/blog", icon: FileText, label: "nav.blog", testid: "admin-nav-cms-blog", roles: ["admin", "staff"] },
         { to: "/portal/admin/cms/careers", icon: Briefcase, label: "nav.career", testid: "admin-nav-cms-careers", roles: ["admin", "staff"] },
         { to: "/portal/admin/cms/home-blocks", icon: LayoutTemplate, label: "cms.homeSections", testid: "admin-nav-cms-home", roles: ["admin", "staff"] },
+        // Phase 19: Content Completion
+        { to: "/portal/admin/cms/testimonials", icon: Quote, label: "cms.testimonials", testid: "admin-nav-cms-testimonials", roles: ["admin", "staff"] },
+        { to: "/portal/admin/cms/faq", icon: HelpCircle, label: "cms.faq", testid: "admin-nav-cms-faq", roles: ["admin", "staff"] },
+        { to: "/portal/admin/cms/packages", icon: Package, label: "cms.packages", testid: "admin-nav-cms-packages", roles: ["admin", "staff"] },
+        { to: "/portal/admin/cms/resources", icon: BookOpen, label: "cms.resources", testid: "admin-nav-cms-resources", roles: ["admin", "staff"] },
+        { to: "/portal/admin/cms/legal", icon: Scale, label: "cms.legal", testid: "admin-nav-cms-legal", roles: ["admin"] },
         { to: "/portal/admin/settings", icon: Settings, label: "cms.settings", testid: ADMIN.navSettings, roles: ["admin", "staff"] },
       ],
     },
