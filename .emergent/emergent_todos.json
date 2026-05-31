@@ -1,34 +1,62 @@
 [
   {
-    "content": "Phase 18A: Modernize H1/H2 font - Replace Clash Display with Space Grotesk",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 18B.1: Fix loading stuck issue on Services/Cases pages",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 18B.2: Add timeout fallback and skeleton loaders",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 18C: Simplify hero layout and improve CTA hierarchy",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 18D: Improve content clarity - shorten copy and value prop",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 18E: Mobile responsive testing and fixes",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 18F: Performance polish - lazy-load 3D and reduced-motion",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 18G: End-to-end testing and regression check",
+    "content": "Phase 19A: Testimonials - Create cms_testimonials collection + backend router",
     "status": "in_progress"
+  },
+  {
+    "content": "Phase 19A: Testimonials - Build admin CMS CRUD page",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19A: Testimonials - Create public testimonial components + homepage integration",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19B: Legal Pages - Create cms_legal_pages collection + backend router",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19B: Legal Pages - Build admin CMS CRUD + public pages (/privacy-policy, /terms)",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19B: Legal Pages - Add footer links + form consent disclaimers",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19C: FAQ - Create cms_faq collection + backend router",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19C: FAQ - Build admin CMS CRUD + public /faq page",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19D: Pricing - Create cms_packages collection + backend router",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19D: Pricing - Build admin CMS CRUD + public /pricing page",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19E: About Page - Create dedicated /about page",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19F: Resources - Create cms_resources collection + backend router + admin CRUD + public page",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19G: Update ENTITY_REGISTRY.md + KTI_09_NAVIGATION_MAP.md",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19H: Seed initial data for all new collections",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 19I: End-to-end testing + SEO validation",
+    "status": "pending"
   }
 ]

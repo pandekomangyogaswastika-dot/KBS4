@@ -15,13 +15,13 @@
   - Phase 15: Real-time Notifications via WebSocket (toast + bell + persisted)
   - Phase 16: Demo Sandbox Engine — Web Product Simulation/Prototype (pilot: KN3)
   - Phase 17: API Documentation (OpenAPI/Swagger UI) — protected docs + JWT try-out
-  - **Phase 18: Compro UI/UX Improvements (Public Site Polish)**
+  - Phase 18: Compro UI/UX Improvements (Public Site Polish)
     - Modernisasi **font heading (H1/H2)** agar lebih modern/enterprise
     - Fix **loading states** (Services/Cases stuck loader) + timeout fallback
-    - Simplify hero (reduce cognitive load, improve clarity & CTA hierarchy)
-    - Improve content clarity (balance metaphor vs. value proposition)
-    - Mobile-first checks: responsive hero, CTAs, 3D fallback
-    - Performance polish for animation/3D: lazy-load + prefers-reduced-motion
+    - Improve perceived performance via skeleton loaders
+  - **Phase 19: IT Solution Company Content Completion (Trust + Authority)**
+    - Trust Triangle: **Testimonials**, **Privacy/Terms**, **FAQ**
+    - Authority Stack: **Pricing/Packages**, **About page**, **Resources/Downloads**
 
 - Build on existing governance foundation (KTI_00–13, ENTITY_REGISTRY, scripts) to keep SSOT clear and prevent duplication/conflicts.
 - Process discipline: **Test core in isolation → fix until works → build app → test incrementally**.
@@ -39,15 +39,19 @@
     - All 3rd-party integrations configurable via admin settings
     - Support mock providers for development/testing
 
-**Current status (overall):** Platform delivered through **Phase 17** ✅
+**Current status (overall):** Platform delivered through **Phase 17** ✅, with Phase 18 UI/UX changes implemented and ready for user testing.
 - ✅ Phase 0–16 selesai (Phase 16 Demo Sandbox Engine: KN3) + E2E verified.
 - ✅ Phase 17 API Documentation (OpenAPI/Swagger UI) — COMPLETE (2026-05-31)
   - `/api/docs`, `/api/redoc`, `/api/openapi.json` protected via **HTTP Basic Auth**
   - JWT Bearer scheme tersedia untuk “Try it out”
   - Tag grouping disediakan
   - Demo KN3 internal endpoints (`/api/demo/kn3/*`) disembunyikan dari schema
+- ✅ Phase 18A/18B implemented:
+  - Heading font: **Space Grotesk**
+  - `useFetch` timeout protection
+  - Skeleton loaders for `/services` and `/cases`
 
-**Next major work:** **Phase 18 — Compro UI/UX Improvements** (public marketing site polish).
+**Next major work:** **Phase 19 — Content Completion for IT Solution Company** (Trust Triangle → Authority Stack).
 
 ---
 
@@ -148,89 +152,158 @@ Outcome delivered, later superseded by cinematic redesign.
 
 ---
 
-## Phase 18 — Compro UI/UX Improvements (Public Site Polish) 🟡 PLANNED
+## Phase 18 — Compro UI/UX Improvements (Public Site Polish) ✅ IMPLEMENTED (Pending User Acceptance)
 
 ### Phase 18.0 Scope (confirmed by discussion)
 Fokus pada UI/UX public marketing site:
-- Modernisasi font untuk H1 (dan heading lain yang relevan) agar lebih modern
-- Fix masalah **loader** yang berpotensi “stuck” pada halaman Services/Cases
-- Perbaikan hirarki CTA dan kejelasan value proposition di hero
-- Mobile-first responsivity & ergonomics
-- Performance polish untuk animasi/3D (prefers-reduced-motion + lazy-load)
+- ✅ Modernisasi font untuk H1 (dan heading lain yang relevan) agar lebih modern
+- ✅ Fix masalah **loader** yang berpotensi “stuck” pada halaman Services/Cases
+- ✅ Improve perceived performance via skeleton loaders
 
-### Phase 18A — Typography Modernization (H1/H2)
-**Goal:** Heading terasa lebih modern, premium, dan enterprise.
+### Phase 18A — Typography Modernization (H1/H2) ✅ DONE
+- Replaced display font to **Space Grotesk**
+- Updated `index.css` + Tailwind font config
 
-**Steps**
-- Audit font yang digunakan (saat ini `Clash Display` untuk display)
-- Pilih font display baru (opsi aman: `Space Grotesk`, `General Sans`, atau `Plus Jakarta Sans` sebagai display)
-- Terapkan konsisten di seluruh public pages:
-  - Home hero H1
-  - Page headers (services/cases/blog/team/contact)
-- Pastikan fallback dan loading font tidak mengganggu CLS.
+### Phase 18B — Loading Reliability (Services/Cases) ✅ DONE
+- Added request timeout protection in `useFetch` (default 10s)
+- Added skeleton loaders for `/services` and `/cases`
 
-### Phase 18B — Loading Reliability (Services/Cases)
-**Goal:** Tidak ada halaman public yang stuck di loading.
+### Phase 18 Testing
+- **Pending:** User manual testing (desktop + mobile)
 
-**Steps**
-- Audit komponen loader dan data fetching.
-- Tambahkan:
-  - timeout fallback (mis. 5 detik) → tampilkan error + retry
-  - skeleton loader untuk list pages
-  - guard untuk “loading 100% tapi tidak redirect”
-- Pastikan behavior sama untuk desktop & mobile.
+---
 
-### Phase 18C — Hero Simplification + CTA Hierarchy
-**Goal:** Kurangi cognitive load, tingkatkan conversion.
+## Phase 19 — IT Solution Company Content Completion (Trust + Authority) 🟡 PLANNED
 
-**Steps**
-- Evaluasi elemen hero yang saling bersaing (H1, 3D, telemetry panel, multi CTA)
-- Define CTA hierarchy:
-  - Primary: Konsultasi (lebih eksplisit)
-  - Secondary: Lihat Portfolio/Case Studies
-- Rapikan spacing/white space & focus point.
+### Phase 19.0 Scope
+Melengkapi konten marketing website agar memenuhi standar **IT Solution Company** dan meningkatkan trust + conversion.
 
-### Phase 18D — Content Clarity (Copy)
-**Goal:** Lebih jelas dan cepat dipahami tanpa kehilangan nuansa space theme.
+**Trust Triangle (P0):**
+1. Testimonials
+2. Privacy Policy + Terms of Service
+3. FAQ
+
+**Authority Stack (P1):**
+4. Pricing/Packages
+5. About page (dedicated)
+6. Resources/Downloads center
+
+
+### Phase 19A — Testimonials (CMS + Public Components)
+**Goal:** Tambahkan social proof yang kuat untuk meningkatkan conversion.
 
 **Steps**
-- Pendekkan subheading value proposition
-- Kurangi jargon/metafora di CTA
-- Pastikan user “langsung paham” layanan utama di 5 detik pertama.
+- Add entity `cms_testimonials` (bilingual fields) + register in `ENTITY_REGISTRY.md`
+- Build admin CMS CRUD for testimonials (`/portal/admin/cms/testimonials`)
+- Add public components:
+  - Homepage testimonial carousel/rail
+  - Optional: show related testimonials on case detail pages
+- Seed initial testimonials (min 5)
 
-### Phase 18E — Mobile-first UX 
-**Goal:** Experience setara/lebih baik di layar kecil.
+**Acceptance Criteria**
+- Testimonials tampil di homepage (responsive)
+- Admin bisa CRUD testimonials
+- Bilingual rendering sesuai locale
+
+
+### Phase 19B — Legal Pages: Privacy Policy + Terms
+**Goal:** Compliance + trust + readiness untuk iklan/enterprise.
 
 **Steps**
-- Audit hero layout di 320/375/414 px
-- Pastikan CTA tidak cramped
-- Pastikan 3D/telemetry panel punya fallback sederhana di mobile
+- Add entity `cms_legal_pages` (bilingual title/content, slug, version)
+- Build admin CMS CRUD (`/portal/admin/cms/legal`)
+- Add public pages:
+  - `/privacy-policy`
+  - `/terms-of-service`
+  - (optional) `/cookie-policy`
+- Add footer links ke legal pages
+- Add consent note pada forms (contact + demo gate + assessment start) linking to privacy policy
 
-### Phase 18F — Motion/3D Performance Polish
-**Goal:** Animasi tetap cinematic tapi tidak mengorbankan performa.
+**Acceptance Criteria**
+- Legal pages accessible dan SEO-safe
+- Footer links tersedia
+- Forms menampilkan disclaimer/link
+
+
+### Phase 19C — FAQ (CMS + Public Page)
+**Goal:** Menjawab objections dan mengurangi friction.
 
 **Steps**
-- Perkuat `prefers-reduced-motion` behavior
-- Lazy-load 3D scene hanya saat diperlukan
-- Batasi heavy effects untuk low-end devices (optional device heuristics)
+- Add entity `cms_faq` (category, Q/A bilingual, ordering)
+- Build admin CMS CRUD (`/portal/admin/cms/faq`)
+- Build public `/faq` page:
+  - Category filters
+  - Accordion UI
+- Optional: embed FAQ blocks on services detail pages
 
-### Phase 18 Testing (mandatory)
+**Acceptance Criteria**
+- `/faq` live, cepat, mobile friendly
+- Admin bisa manage FAQ
+- Bilingual Q/A
+
+
+### Phase 19D — Pricing/Packages
+**Goal:** Transparansi dan guidance untuk calon klien + meningkatkan conversion.
+
+**Steps**
+- Add entity `cms_packages` (tier, price_from, features bilingual, CTA label)
+- Build admin CMS CRUD (`/portal/admin/cms/packages`)
+- Add public `/pricing` page dengan tier cards + comparison table
+- Integrate CTA to contact form with prefilled package interest
+
+**Acceptance Criteria**
+- `/pricing` live dan mudah dipahami
+- Packages dapat dikelola di CMS
+
+
+### Phase 19E — About Page (Dedicated)
+**Goal:** Brand story dan trust (enterprise buyers sering cek about page).
+
+**Steps**
+- Add route `/about`
+- Source content dari `system_settings` atau `cms_pages` (prefer `cms_pages` blocks agar fleksibel)
+- Add sections:
+  - Story, Mission, Values
+  - Timeline/milestones
+  - Link ke `/team` dan `/career`
+
+**Acceptance Criteria**
+- `/about` live, bilingual, CTA ke contact
+
+
+### Phase 19F — Resources / Downloads Center
+**Goal:** Thought leadership + lead magnet.
+
+**Steps**
+- Add entity `cms_resources` (type, description bilingual, file url, gated flag)
+- Build admin CMS CRUD (`/portal/admin/cms/resources`)
+- Build public `/resources` list + detail
+- Lead capture gating (optional P1): require email before download → store into `crm_leads` with source `resource_download`
+
+**Acceptance Criteria**
+- `/resources` live, filterable
+- Admin bisa upload/manage resources
+- Optional gating flow teruji
+
+
+### Phase 19 Testing (mandatory)
 - Manual UX testing (desktop + mobile)
-- Periksa:
-  - Tidak ada stuck loading
-  - Hero copy & CTA jelas
-  - Font heading terlihat modern dan konsisten
-  - Reduced-motion fallback bekerja
-- Regression: portal/admin/demos tidak terdampak.
+- Content QA:
+  - Bilingual fields render correctly
+  - Links/CTA correct
+  - SEO meta generated/consistent
+- Regression: portal/admin/demos tidak terdampak
+- Update `KTI_09_NAVIGATION_MAP.md` + validate with `check_nav_map.py`
 
 ---
 
 ## 3) Next Actions (Immediate)
 1. ✅ Phase 16: Demo Sandbox Engine (KN3) (DONE — iteration_13 100% PASS)
 2. ✅ Phase 17: API Documentation (DONE)
-3. 🟡 **Phase 18: Compro UI/UX Improvements** (mulai dari: fix loading + modernisasi H1 font)
+3. ✅ Phase 18: Compro UI/UX Improvements (IMPLEMENTED — waiting user testing)
+4. 🟡 **Phase 19: Content Completion** (start with Trust Triangle: Testimonials + Legal + FAQ)
 
-**Tier 2 remaining (after Phase 18 — menunggu konfirmasi user):**
+**Tier 2 remaining (after Phase 19 — menunggu konfirmasi user):**
 - Dark/Light theme toggle
 - Multi-tenant support / whitelabel
 - Advanced analytics (funnels/cohort/retention)
@@ -247,10 +320,17 @@ Fokus pada UI/UX public marketing site:
 - Admin/Portal: workflows tetap stabil; RBAC correct.
 - Phase 16: demo sandbox stable, isolated, lead capture works.
 - Phase 17: docs protected Basic Auth + JWT try-it-out works.
-- **Phase 18:**
+- Phase 18:
   - H1 font terasa modern/premium dan konsisten
   - Tidak ada loading screen stuck di Services/Cases
-  - CTA hierarchy jelas; conversion path lebih kuat
-  - Mobile UX solid
-  - Animasi/3D tetap halus; reduced-motion fallback benar
+  - Skeleton loaders improve perceived performance
   - Tidak ada regression di portal/admin/demos
+- **Phase 19:**
+  - Testimonials tersedia dan dapat dikelola via CMS
+  - Legal pages (privacy/terms) live + footer links + form disclaimers
+  - FAQ page live (bilingual, categorized)
+  - Pricing/packages live dan manageable via CMS
+  - About page live dan jelas (story/mission/values)
+  - Resources center live (optional gated downloads) + lead tracking
+  - SEO metadata konsisten dan tidak ada broken links
+  - Navigation SSOT (`KTI_09_NAVIGATION_MAP.md`) updated + validation pass

@@ -248,6 +248,13 @@ app.include_router(search_router.router)
 app.include_router(notifications_router.router)
 app.include_router(demo_router.router)
 
+# Phase 19: Content Completion routers
+app.include_router(testimonials_router.router, prefix="/api")
+app.include_router(legal_router.router, prefix="/api")
+app.include_router(faq_router.router, prefix="/api")
+app.include_router(packages_router.router, prefix="/api")
+app.include_router(resources_router.router, prefix="/api")
+
 # --- Demo KN3 Routers -------------------------------------------------------
 app.include_router(kn3_auth_router.router)
 app.include_router(kn3_dashboard_router.router)
