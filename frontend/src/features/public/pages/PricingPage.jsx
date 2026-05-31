@@ -19,7 +19,7 @@ export default function PricingPage() {
   };
 
   const tierOrder = { starter: 0, professional: 1, enterprise: 2 };
-  const sorted = packages?.slice().sort((a, b) => (tierOrder[a.tier] || 999) - (tierOrder[b.tier] || 999));
+  const sorted = packages?.slice().sort((a, b) => (tierOrder[a.tier] ?? 999) - (tierOrder[b.tier] ?? 999));
 
   return (
     <div data-testid="pricing-page">
