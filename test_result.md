@@ -469,3 +469,62 @@ agent_communication:
       
       SKIP drag-and-drop, camera, microphone tests.
       Auth credentials: admin@kubus.id/Admin#2026, staff@kubus.id/Staff#2026, client@kubus.id/Client#2026
+
+# Phase 16 - Demo Sandbox Engine
+
+## Phase 16 Backend
+- task: "POST /api/demo/sessions creates demo session with seed data"
+  implemented: true
+  working: true
+  priority: high
+  
+- task: "GET /api/demo/sessions/:id validates session"
+  implemented: true
+  working: true
+  priority: high
+
+- task: "GET /api/demo/kn3/dashboard returns WMS metrics"
+  implemented: true
+  working: true
+  priority: high
+
+- task: "GET /api/demo/kn3/products returns 11 generic products"
+  implemented: true
+  working: true
+  priority: high
+
+- task: "GET /api/demo/kn3/sales-orders returns 5 orders"
+  implemented: true
+  working: true
+  priority: high
+
+## Phase 16 Frontend
+- task: "CaseDetailPage shows demo CTA button when demo_enabled=True"
+  implemented: true
+  working: true
+  priority: high
+
+- task: "DemoGateForm shows on click with name/email/company fields"
+  implemented: true
+  working: true
+  priority: high
+
+- task: "DemoGateForm submit creates session and redirects to /demo/kn3"
+  implemented: true
+  working: true
+  priority: high
+
+- task: "DemoPage validates session from URL param"
+  implemented: true
+  working: true
+  priority: high
+
+- task: "KN3DemoApp loads with DemoBanner at top"
+  implemented: true
+  working: true
+  priority: high
+
+- task: "Admin CMS cases has demo config fields"
+  implemented: true
+  working: true
+  priority: medium

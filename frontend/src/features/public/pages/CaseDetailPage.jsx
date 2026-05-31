@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, PlayCircle } from "lucide-react";
 import { useFetch } from "@/lib/apiClient";
 import { useContentLocale } from "@/lib/useContentLocale";
 import { PlanetOrb } from "@/components/decor";
@@ -9,6 +10,7 @@ import { LoadingView, ErrorView } from "@/components/StateViews";
 import { GlassPillButton } from "@/components/kti/GlassPillButton";
 import { TwoToneHeading } from "@/components/kti/TwoToneHeading";
 import SEOHead from "@/components/SEOHead";
+import DemoGateForm from "@/components/DemoGateForm";
 
 const GLASS =
   "rounded-[var(--kti-radius-card)] border border-white/10 bg-white/[0.05] backdrop-blur-xl shadow-[0_18px_60px_rgba(0,0,0,0.55)]";
@@ -28,6 +30,7 @@ export default function CaseDetailPage() {
   const { t } = useTranslation();
   const { L } = useContentLocale();
   const { data, loading, error, reload } = useFetch(`/cases/${slug}`, [slug]);
+  const [showDemoGate, setShowDemoGate] = useState(false);
 
   if (loading) return <div className="pt-36"><LoadingView /></div>;
   if (error || !data) return <div className="pt-36"><ErrorView message={error} onRetry={reload} /></div>;
@@ -83,11 +86,43 @@ export default function CaseDetailPage() {
         )}
 
         <div className={`mt-12 flex flex-col items-center gap-5 ${GLASS} p-10 text-center kti-glow-mix`}>
+          {/* Demo CTA — tampil jika case punya demo */}
+          {data.demo_enabled && data.demo_slug && (
+            <div className="mb-4 w-full flex flex-col items-center gap-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-900/60 border border-indigo-700/50 text-xs text-indigo-300 font-medium mb-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                Demo Interaktif Tersedia
+              </div>
+              <p className="text-sm text-neutral-400 max-w-sm">
+                Coba langsung simulasi{" "}
+                <span className="text-white font-medium">{data.demo_label_id || L(data.title)}</span>{" "}
+                — data sandbox terisolasi, 90 menit akses penuh.
+              </p>
+              <button
+                data-testid="case-demo-cta"
+                onClick={() => setShowDemoGate(true)}
+                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-900/40"
+              >
+                <PlayCircle className="w-5 h-5" />
+                {data.demo_label_id || "Coba Demo Gratis"}
+              </button>
+            </div>
+          )}
+
           <TwoToneHeading as="h3" className="text-2xl sm:text-3xl" strong={t("pages.relatedCta")} />
           <GlassPillButton as={Link} to="/contact" data-testid="case-contact-cta">
             {t("common.getStarted")}
           </GlassPillButton>
         </div>
+
+        {/* Gate Form Modal */}
+        {showDemoGate && (
+          <DemoGateForm
+            caseTitle={L(data.title)}
+            appSlug={data.demo_slug || "kn3"}
+            onClose={() => setShowDemoGate(false)}
+          />
+        )}
       </div>
     </div>
   );

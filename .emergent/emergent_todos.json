@@ -1,30 +1,26 @@
 [
   {
-    "content": "Review implementasi Phase 15 yang sudah ada (backend + frontend)",
+    "content": "Phase 16A: Demo Session Engine backend (demo_sessions, TTL, seed generik WMS)",
     "status": "completed"
   },
   {
-    "content": "Audit trigger integrasi notifikasi ke semua event (project/approval/invoice/lead)",
+    "content": "Phase 16B: Copy + mount KN3 routers di /api/demo/kn3/ dengan session-aware DB",
     "status": "completed"
   },
   {
-    "content": "Lengkapi/fix notification_service.py untuk trigger dari event",
+    "content": "Phase 16C: Copy + adapt KN3 frontend ke /src/demos/kn3/ + lazy route",
     "status": "completed"
   },
   {
-    "content": "Verifikasi NotificationBell terintegrasi di AdminLayout & ClientLayout",
+    "content": "Phase 16D: Case Study gate form + CTA button + Admin CMS config",
     "status": "completed"
   },
   {
-    "content": "End-to-end testing Phase 15 dengan testing_agent_v3",
+    "content": "Phase 16E: Demo banner + lead capture CTA setelah tour selesai",
     "status": "completed"
   },
   {
-    "content": "Fix semua bug ditemukan testing agent",
-    "status": "completed"
-  },
-  {
-    "content": "Update plan.md dan docs dengan status Phase 15 SELESAI",
-    "status": "completed"
+    "content": "End-to-end testing Phase 16 dengan testing_agent_v3",
+    "status": "in_progress"
   }
 ]

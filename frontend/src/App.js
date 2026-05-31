@@ -52,6 +52,7 @@ const ClientMessages = lazy(() => import("@/features/portal/client/ClientMessage
 const ClientAssistant = lazy(() => import("@/features/portal/client/ClientAssistant"));
 
 const AssessmentClient = lazy(() => import("@/features/assessment/AssessmentClient"));
+const DemoPage = lazy(() => import("@/features/demo/DemoPage"));
 
 function NotFound() {
   return (
@@ -95,6 +96,7 @@ function App() {
               <Route path="/portal/login" element={<LoginPage />} />
               <Route path="/portal/coming-soon" element={<PortalComingSoon />} />
               <Route path="/assessment/:token" element={<AssessmentClient />} />
+              <Route path="/demo/kn3" element={<DemoPage appSlug="kn3" />} />
 
               {/* Admin + Staff portal */}
               <Route

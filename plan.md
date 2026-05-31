@@ -1,7 +1,7 @@
 # plan.md — Kubus Teknologi Indonesia Platform
 
 ## 1) Objectives
-- Deliver an **award‑grade, space‑themed immersive** bilingual (ID/EN) marketing site + a scalable **multi‑role platform**:
+- Deliver an **award‑grade, space‑themed immersive** marketing site + a scalable **multi‑role platform**:
   - Advanced CMS + Media Library (admin/staff)
   - Assessment module (token-based, template-driven)
   - **Client Portal + Staff/Admin Portal extensions + Project Management (Phase 5–6)**
@@ -16,6 +16,13 @@
   - **Phase 12 (Tier 1): Email Notifications (mock-first) + admin-configurable integrations (multi-integrasi)**
   - **Phase 13 (Tier 1): Performance Optimization (SEO + UX)**
   - **Phase 14 (Tier 1): Advanced Search (global search for usability)**
+  - **Phase 15 (Tier 2): Real-time Notifications via WebSocket (toast + bell + persisted)**
+  - **Phase 16 (Tier 2): Demo Sandbox Engine — Web Product Simulation/Prototype**
+    - Studi kasus menampilkan **demo mini-app** yang bisa dicoba user
+    - **Guided Tour** (walkthrough + hotspot) terintegrasi dalam demo
+    - **Full sandbox** (create/edit/delete) dalam **session terisolasi**
+    - **Gated demo** (nama+email) + **lead capture CTA** setelah demo
+    - Konten demo dapat **dikonfigurasi admin** (routing/link, enable/disable, label)
 
 - Build on the existing **governance foundation** (KTI_00–13, ENTITY_REGISTRY, scripts) to keep SSOT clear and prevent duplication/conflicts.
 - Follow: **Test core in isolation → fix until works → build app → test incrementally**.
@@ -39,6 +46,8 @@
   - Scope delivered: Toast + Bell + persisted MongoDB + multi-portal (admin/staff/client) + live updates
   - Triggers: lead.created, project.created/status_changed/assigned, approval.requested/signed, invoice.created/status_changed, document.uploaded, chat.message
   - Testing: Backend 93% (1 minor: GET /api/leads returns 405 by design), Frontend 100%, Overall 96%
+
+**Next major work:** **Phase 16 Demo Sandbox Engine** (pilot: **KN3 Smart WMS**).
 
 ---
 
@@ -120,8 +129,8 @@ Fokus: public website (compro) sinematik (scroll-driven).
 - `/portal/admin/clients` — daftar klien
 - `/portal/admin/analytics` — analytics dashboard (Phase 10)
 - `/portal/admin/seo` — SEO dashboard (Phase 11)
-- **(planned)** `/portal/admin/settings/integrations` — integrations settings (Phase 12)
-- **(planned)** `/portal/admin/settings/outbox` — email outbox viewer (Phase 12)
+- `/portal/admin/settings/integrations` — integrations settings (Phase 12)
+- `/portal/admin/settings/email-outbox` — email outbox viewer (Phase 12)
 
 > Note: `docs/KTI_09_NAVIGATION_MAP.md` harus merefleksikan rute final di atas.
 
@@ -215,7 +224,7 @@ Implemented routers:
 - Score history persistence:
   - `POST /api/seo/pages/{page_id}/score-snapshot`
   - `GET /api/seo/pages/{page_id}/score-history`
-  - New collection: `seo_score_history`
+- New collection: `seo_score_history`
 - PDF export:
   - `GET /api/seo/report/pdf/{page_id}` (reportlab)
 
@@ -259,7 +268,6 @@ Implemented routers:
 - ✅ Round-trip safe (kirim `********` tidak menimpa nilai asli)
 
 ---
----
 
 ## Phase 13 (Tier 1) — Performance Optimization (SEO + UX) ✅ COMPLETED
 **Goal:** mempercepat public site dan backend tanpa merusak cinematic visuals atau behavior existing.
@@ -272,79 +280,167 @@ Implemented routers:
 
 ### 13.1 Delivered — Backend Performance
 - **In-memory TTL cache** (`backend/cache.py`): asyncio-safe dict-based, namespace + per-key invalidation, deepcopy on store to prevent caller mutation, stats counters
-- **Public content caching** (`routers/content.py`): all 12 public read endpoints (`/services`, `/cases`, `/team`, `/clients`, `/tech`, `/blog`, `/careers`, detail variants, `/settings`) cached 60s + `Cache-Control: public, max-age=60, stale-while-revalidate=30`
-- **Cache invalidation** wired in `routers/cms.py`: create/patch/publish/unpublish/delete/reorder/settings mutations flush relevant cache entries
-- **GZipMiddleware** at minimum_size=1024 → measured **63% payload reduction** (6081B → 2238B for `/api/services`)
+- **Public content caching** (`routers/content.py`): all 12 public read endpoints cached 60s + `Cache-Control: public, max-age=60, stale-while-revalidate=30`
+- **Cache invalidation** wired in `routers/cms.py`
+- **GZipMiddleware** at minimum_size=1024
 - **Admin observability**:
-  - `GET /api/admin/cache/stats` → `{hits, misses, sets, invalidations, size, namespaces}`
-  - `POST /api/admin/cache/flush` → wipe entire cache
+  - `GET /api/admin/cache/stats`
+  - `POST /api/admin/cache/flush`
 
-### 13.2 Delivered — MongoDB Indexes (prep also for Phase 14)
-- All `cms_*` collections: `(status, order)` + `(status, created_at -1)` compound indexes (covers the public list query 100%)
-- `crm_leads`: added `status` index (admin filter)
-- **Bilingual text indexes** on `cms_services` / `cms_cases` / `cms_blog` / `cms_careers` covering `title.id`, `title.en`, `summary/body.id`, `summary/body.en` — siap dipakai langsung untuk Phase 14 global search
+### 13.2 Delivered — MongoDB Indexes
+- Compound indexes on `cms_*` collections for `(status, order)` and `(status, created_at -1)`
+- `crm_leads` status index
+- Bilingual text indexes on `cms_services` / `cms_cases` / `cms_blog` / `cms_careers`
 
 ### 13.3 Delivered — Frontend Performance
-- `PageHeader.jsx`: poster img → `loading="eager"` + `fetchpriority="high"` + `decoding="async"` (LCP candidate)
-- All below-the-fold imgs (CasesGrid, CrewGrid, BlogPage): added `decoding="async"` on top of existing `loading="lazy"`
-- (Admin pages already use `React.lazy` route splitting → no extra bundle work needed)
-
-### 13.4 Notes
-- Cache adalah in-process Python dict (tanpa Redis). Reset di setiap backend restart — acceptable untuk volume traffic saat ini.
-- Kubernetes ingress kadang menulis ulang `Cache-Control: no-store` di public URL — itu di luar aplikasi. Header internal app sudah benar.
-- Bila perlu cache shared antar replica, swap implementation `cache.py` dengan Redis tanpa ubah caller.
+- LCP image priorities and `decoding="async"` on below-the-fold images
+- Admin pages already use `React.lazy` route splitting
 
 ---
 
 ## Phase 14 (Tier 1) — Advanced Search (Global, RBAC-safe) ✅ COMPLETED
-**Goal:** menyatukan pencarian seluruh konten (CMS + Portal) dalam satu UX, dengan RBAC ketat agar tidak ada cross-tenant leak.
+**Goal:** menyatukan pencarian seluruh konten (CMS + Portal) dalam satu UX, dengan RBAC ketat.
 
 ### 14.0 Final result (testing_agent_v3 iteration 10)
-- ✅ Backend: **20/20 PASS (100%)** — public, portal, RBAC ketat (admin/staff/client)
-- ✅ Frontend: **100%** — public navbar, admin layout, client layout, Cmd+K, dialog UX
-- ✅ Regression Phase 12 & 13: **lulus** (no breakage)
+- ✅ Backend: **20/20 PASS (100%)**
+- ✅ Frontend: **100%**
 
 ### 14.1 Delivered — Backend
-- `routers/search.py`:
-  - `GET /api/search` — anonymous, CMS-only (`services`, `cases`, `blog`, `careers`)
-  - `GET /api/portal/search` — auth, +`projects`/`approvals`/`documents`/`leads` (RBAC scoped per role)
-- Search strategy: **MongoDB `$text`** primer (pakai bilingual text index dari Phase 13) → **regex fallback** untuk partial words / queries pendek
-- **RBAC contract**:
-  - admin → unrestricted
-  - staff → `staff_ids` filter di pm_projects → only related approvals/documents; leads allowed
-  - client → `client_id` filter di pm_projects → only related approvals/documents; **no leads**
-  - URL routing role-aware: project URL `/portal/admin/projects` untuk admin/staff, `/portal/projects/{id}` untuk client
-- Response shape stabil: `{query, total, took_ms, scope, groups: [{type, label, count, items}]}` — setiap `item` punya `id`, `type`, `title`, `summary`, `snippet`, `url`, `meta?`
-- Public search di-cache 30 detik via `cache.py` decorator (Phase 13)
-- Snippet generator: window ±40/80 char di sekitar match dengan elipsis
+- `routers/search.py` public + portal search endpoints
+- MongoDB `$text` primary + regex fallback
+- RBAC strict scoping
+- Public search cached 30s
 
 ### 14.2 Delivered — Frontend
-- `components/GlobalSearch.jsx`:
-  - Reusable command palette dialog (Shadcn `CommandDialog` + `CommandInput`)
-  - Props: `scope="public" | "portal"` (otomatis pilih endpoint)
-  - Debounced search (250ms) + AbortController untuk cancel request lama
-  - Cmd/Ctrl+K shortcut global via `window.addEventListener("keydown")`
-  - Icons per type (Lightbulb, Briefcase, Newspaper, FolderKanban, BadgeCheck, FileText, Inbox, GraduationCap)
-  - States: searching (Loader), empty short query, no results, result groups dengan separator
-  - Footer: `{total} hasil ditemukan dalam {ms}ms`
-- **Trigger integration**:
-  - `FloatingPillNavbar` — public scope, visible on lg+ viewport
-  - `AdminLayout` header — portal scope, visible on md+ viewport
-  - `ClientLayout` header — portal scope, visible on md+ viewport
-- **i18n** dwibahasa: namespace `search.*` di `id.json` + `en.json`
+- `components/GlobalSearch.jsx` command palette
+- Integrated in public navbar + admin/client headers
+- i18n `search.*`
 
-### 14.3 Verified UX
-- ✅ Public homepage → click "Cari ⌘K" → ketik "cloud" → dialog menampilkan grup "Layanan" dengan hasil + snippet + counter `1 hasil ditemukan dalam 16ms`
-- ✅ Admin search "wms" → 4 grup (Layanan, Studi Kasus, Proyek, Dokumen)
-- ✅ Client search "Phase12" (lead admin-only) → **0 hasil** (RBAC works)
-- ✅ Client search "wms" → melihat project sendiri dengan URL `/portal/projects/{id}` (bukan admin URL)
-- ✅ Validation: q<2 chars → 422; no auth on portal → 401
+---
 
-### 14.4 Performance characteristics
-- Text index covers 4 main collections — average query latency 1-16ms
-- 30s public-search cache → repeat query instan
-- Frontend debounce 250ms + AbortController → minimum waste request
-- Limit `limit≤25` mencegah payload runaway
+## Phase 15 (Tier 2) — Real-time Notifications WebSocket ✅ COMPLETED
+**Goal:** meningkatkan UX portal dengan notifikasi real-time (bell + toast) yang persisted.
+
+**Delivered:**
+- WebSocket `/api/ws/notifications?token=...`
+- REST CRUD notifications
+- Triggers across lead/project/approval/invoice/document/chat
+
+**Testing (iteration_11):** Backend 93% (1 by design), Frontend 100%.
+
+---
+
+## Phase 16 (Tier 2) — Demo Sandbox Engine (Web Product Simulation/Prototype) 🟡 PLANNED
+
+### Phase 16.0 Scope (confirmed)
+- **Type:** Sandboxed Mini‑App (fully functional, limited scope) + Guided Tour
+- **Interaction:** Full sandbox (create/edit/delete) dalam session terisolasi
+- **Content:** Admin‑configurable via CMS (enable, label, route/link)
+- **Lead gen:**
+  - **Gated demo** (nama + email) sebelum akses
+  - **Lead capture CTA** setelah user mencoba demo
+- **Pilot demo:** KN3 (Smart WMS)
+- **Demo role:** Admin (full access)
+- **Demo data:** dibuat **generic** (hindari nama/identitas PT. Kain Nusantara)
+- **Language:** Indonesian only (v1)
+- **Architecture:** Copy KN3 code into KBS3, lalu adapt:
+  - auth → demo session token (bukan login)
+  - API prefix → /api/demo/wms/*
+  - MongoDB session isolation → per-session namespace + TTL cleanup
+
+### Phase 16A — Demo Session Engine (Backend Infra)
+**Goal:** membuat engine session demo yang aman, terisolasi, dan auto-clean.
+
+**User stories**
+1. Sebagai visitor, saya bisa mengakses demo setelah mengisi nama+email.
+2. Sebagai sistem, demo data harus terisolasi per session agar visitor tidak saling mengganggu.
+3. Sebagai sistem, demo harus auto-expire agar database tidak menumpuk.
+
+**Steps**
+- Data model (SSOT): `demo_sessions`:
+  - `id`, `case_slug`, `demo_key` (mis: `kn3_wms`), `created_at`, `expires_at`, `status`
+  - `lead_id` (optional), `ip_hash` (optional), `ua_hash` (optional)
+  - Index TTL di `expires_at`
+- Endpoint inti:
+  - `POST /api/demo/sessions` (anonymous): create session + (optional) create lead
+  - `GET /api/demo/sessions/{id}`: validate active
+  - `POST /api/demo/sessions/{id}/renew` (optional): extend TTL (rate-limited)
+- Namespace isolation:
+  - Semua query KN3 router membaca `X-Demo-Session: <id>` dan menggunakan collection prefix `demo_<id>__<collection>` atau `demo_db.get_collection(name)` wrapper.
+- Seeding:
+  - Port `seed_realistic.py` logic dan ubah jadi **generic seed** (nama perusahaan, warehouse, customers, products) via parameter.
+
+**Security**
+- Session ID random UUIDv4 (unpredictable)
+- Rate limit create session per IP
+- No admin JWT needed (demo uses session token)
+
+### Phase 16B — KN3 Backend Router Mounting (API prefix + session aware)
+**Goal:** copy router KN3 tapi tidak bentrok dengan KBS3 `/api/*`.
+
+**Steps**
+- Mount KN3 routers di prefix khusus: `/api/demo/wms/*`
+- Adapt dependencies:
+  - Replace `get_db()` calls dengan `get_demo_db(session_id)` wrapper
+  - Ensure all writes go to namespaced collections
+- Add "demo admin" identity (virtual user) untuk audit fields:
+  - `actor_id="demo_admin"`, `actor_role="admin"`
+
+### Phase 16C — KN3 Frontend Integration (React, code-splitting)
+**Goal:** demo tidak membebani initial load public site.
+
+**Steps**
+- Copy KN3 frontend ke folder baru:
+  - `frontend/src/demos/kn3/*`
+- Implement entrypoint `KN3DemoApp`:
+  - Read `session` dari query param
+  - Setup axios base URL to KBS3 backend
+  - Add header `X-Demo-Session`
+  - Replace login screen dengan `DemoSessionGuard`
+- Code splitting:
+  - Routing demo via `React.lazy(() => import('@/demos/kn3/KN3DemoApp'))`
+  - Demo assets only load when user enters `/demo/kn3`
+- Guided Tour:
+  - Reuse `tourDefinitions.js` dari KN3
+  - Auto-start tour ketika demo pertama kali dibuka
+- Bahasa:
+  - Indonesian only (no i18n work in v1 demo)
+
+### Phase 16D — KBS3 Case Study Integration (Gating + Admin Config)
+**Goal:** admin bisa mengaktifkan demo per studi kasus + mengatur routing/link.
+
+**Steps**
+- Extend `cms_cases` schema:
+  - `demo_enabled: bool`
+  - `demo_route: string` (mis. `/demo/kn3` atau `/demo/wms`)
+  - `demo_label: string` (button label)
+  - `demo_timeout_minutes: number`
+  - `demo_key: string` (maps to backend demo implementation)
+- Update Admin CMS UI:
+  - form fields untuk demo
+  - validation: route must start with `/demo/`
+- Public CaseDetailPage:
+  - If `demo_enabled` show button “Coba Demo”
+  - Click → open GateForm (nama+email)
+  - On submit → `POST /api/demo/sessions` → redirect ke `demo_route?session=<id>`
+
+### Phase 16E — Polish (Lead capture + UX)
+- Lead capture banner/modal setelah:
+  - (A) 2 menit in-demo, atau
+  - (B) user menyelesaikan guided tour
+- CTA: “Minta konsultasi / Minta proposal”
+- Optional: add analytics event tracking (Phase 10 pipeline)
+
+### Phase 16 Testing (mandatory)
+- Backend:
+  - Create demo session → TTL created
+  - Namespaced write/read works
+  - Expired session returns 410/401
+- Frontend:
+  - Gated access flow works
+  - Demo loads via lazy route only
+  - Guided tour runs
+- Regression: public pages + portals unaffected
 
 ---
 
@@ -355,21 +451,24 @@ Implemented routers:
 3. ✅ Phase 14: Advanced Search (DONE — iteration_10 100% PASS)
 4. ✅ Phase 15: Real-time Notifications WebSocket (DONE — iteration_11 96% PASS, 100% frontend)
 
-**Selanjutnya (Tier 2 remaining — menunggu konfirmasi user):**
+**Next build target:**
+5. 🟡 **Phase 16 (Pilot): Demo Sandbox Engine for KN3 Smart WMS**
+
+**Tier 2 remaining (after Phase 16 — menunggu konfirmasi user):**
 - Dark/Light theme toggle (ambient + persistent user preference)
 - Multi-tenant support / Custom branding per-client (sub-domain whitelabel)
 - Advanced analytics (funnels/cohort/retention)
 - Mobile PWA
 - Payment gateway aktivasi (Midtrans/Xendit) — skema config sudah disiapkan di Phase 12
-- Custom branding per-client (sub-domain whitelabel)
 - Optional: object storage migration ke S3/R2 (config sudah disiapkan di Phase 12)
 
-**SSOT docs to update (mandatory):**
+**SSOT docs to update (mandatory)**
 - Update `ENTITY_REGISTRY.md`:
-  - ensure `seo_pages`, `seo_ai_logs`, `seo_score_history`
-  - add `integration_settings`, `email_outbox`, `email_events`, `email_templates`, `notification_preferences`
+  - add `demo_sessions` (+ possible `demo_events` if tracking interactions)
+  - ensure `notification_preferences`, `integration_settings`, `email_outbox`, `email_events`, `email_templates`
 - Update `docs/KTI_09_NAVIGATION_MAP.md`:
-  - include new settings routes
+  - include `/demo/*` routes
+  - include admin CMS demo fields location
 
 **Catatan dependency / environment:**
 - Container Node.js = `20.20.2`.
@@ -380,19 +479,23 @@ Implemented routers:
 
 ## 4) Success Criteria
 - Governance: compliance scripts pass (0 FAIL) at phase ends; SSOT maintained.
-- Public: cinematic bilingual experience remains stable, reduced-motion supported.
+- Public: cinematic experience remains stable, reduced-motion supported.
 - Admin: CMS/Media/Assessment/PM remain stable, RBAC correct.
 - Portal (Phase 5–6): client+staff workflows usable end-to-end with strict scoping.
 - Phase 7: AI groundedness + RBAC-safe portal context; logs available.
 - Phase 9: approvals e-sign + audit trail verifiable; certificate PDF downloadable; strict RBAC.
 - Phase 10: analytics visible for admin/staff; charts stable; client blocked.
 - Phase 11: SEO foundation + AI automation + dashboard + visual enhancements + PDF exports all RBAC-safe.
-- **Phase 12:**
-  - Integrations framework live (Email + Payment placeholder + Storage placeholder)
-  - email notifications end-to-end using Mock provider
-  - provider config editable in admin settings; secrets masked in UI
-  - no hardcoded keys/endpoints/DB name
-  - outbox viewer working
-- **Phase 13:** measurable performance improvements (bundle size, load speed) without breaking visuals.
-- **Phase 14:** global search works with correct RBAC scoping; no data leakage; acceptable latency.
+- Phase 12: integrations framework + email notifications (mock) end-to-end.
+- Phase 13: measurable performance improvements without breaking visuals.
+- Phase 14: global search works with correct RBAC scoping; no data leakage.
+- Phase 15: real-time notifications stable (WS + REST + persisted).
+- **Phase 16 (Demo Sandbox Engine):**
+  - User dapat membuka demo dari studi kasus dengan gating name+email
+  - Demo **tidak membebani initial load** (lazy route + code splitting)
+  - Session sandbox **terisolasi** (create/edit/delete aman)
+  - Session auto-expire (TTL) dan tidak menumpuk DB
+  - Admin bisa mengaktifkan/menonaktifkan demo per studi kasus dan mengatur route/link
+  - Guided tour berjalan dan membantu user menyelesaikan flow demo
+  - Lead capture CTA muncul dan leads tercatat
 - Every phase ends with `testing_agent_v3` and all reported bugs fixed (or explicitly accepted as tech debt).

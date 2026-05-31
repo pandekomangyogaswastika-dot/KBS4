@@ -44,6 +44,14 @@ export const RESOURCE_SCHEMAS = {
       { name: "results", type: "object-list", label: L("Hasil", "Results"), itemFields: RESULTS_ITEM },
       { name: "tech", type: "tags", label: L("Teknologi", "Tech") },
       { name: "cover_image_url", type: "media", label: L("Gambar Cover", "Cover Image") },
+      // ── Demo Sandbox Config ──────────────────────────────────────────────
+      { name: "demo_enabled", type: "boolean", label: L("Aktifkan Demo", "Enable Demo"), half: true },
+      { name: "demo_slug", type: "text", label: L("Demo App Slug", "Demo App Slug"), half: true,
+        placeholder: "kn3", hint: L("Contoh: kn3 (nama app demo)", "e.g. kn3") },
+      { name: "demo_label_id", type: "text", label: L("Label Tombol Demo (ID)", "Demo Button Label (ID)"), half: true,
+        placeholder: "Coba Demo WMS" },
+      { name: "demo_timeout_minutes", type: "number", label: L("Timeout Demo (menit)", "Demo Timeout (min)"), half: true,
+        placeholder: "90" },
     ],
   },
   team: {

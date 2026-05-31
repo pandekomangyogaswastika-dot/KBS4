@@ -34,6 +34,23 @@ from routers import seo_ai as seo_ai_router  # noqa: E402
 from routers import integrations as integrations_router  # noqa: E402
 from routers import search as search_router  # noqa: E402
 from routers import notifications as notifications_router  # noqa: E402
+from routers import demo as demo_router  # noqa: E402
+from demo_context import set_kn3_demo_db, reset_kn3_demo_db  # noqa: E402
+from db import get_client as mongo_client  # noqa: E402
+import re as _re  # noqa: E402
+
+# Demo KN3 routers
+from demos.kn3.routers import auth as kn3_auth_router  # noqa: E402
+from demos.kn3.routers import dashboard as kn3_dashboard_router  # noqa: E402
+from demos.kn3.routers import products as kn3_products_router  # noqa: E402
+from demos.kn3.routers import inventory as kn3_inventory_router  # noqa: E402
+from demos.kn3.routers import warehouses as kn3_warehouses_router  # noqa: E402
+from demos.kn3.routers import customers as kn3_customers_router  # noqa: E402
+from demos.kn3.routers import sales_orders as kn3_sales_orders_router  # noqa: E402
+from demos.kn3.routers import uoms as kn3_uoms_router  # noqa: E402
+from demos.kn3.routers import wms as kn3_wms_router  # noqa: E402
+from demos.kn3.routers import inbound_receiving as kn3_inbound_router  # noqa: E402
+from demos.kn3.routers import outbound_picking as kn3_outbound_router  # noqa: E402
 from seed_email_templates import seed_email_templates  # noqa: E402
 from security import require_role  # noqa: E402
 from cache import cache_stats, clear_all  # noqa: E402
@@ -53,6 +70,51 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# --- Demo Context Middleware -------------------------------------------------
+# Set MongoDB database context untuk setiap request ke /api/demo/kn3/*
+_DEMO_KN3_PATH_RE = _re.compile(r"^/api/demo/kn3/")
+
+@app.middleware("http")
+async def demo_kn3_context_middleware(request: Request, call_next):
+    """
+    Untuk setiap request ke /api/demo/kn3/*, ambil session_id dari
+    Authorization header, validasi, dan set demo DB context.
+    """
+    if _DEMO_KN3_PATH_RE.match(str(request.url.path)):
+        auth_header = request.headers.get("Authorization", "")
+        session_id = None
+        if auth_header.startswith("Bearer "):
+            session_id = auth_header.replace("Bearer ", "").strip()
+
+        if session_id and session_id != "demo-token":
+            try:
+                from datetime import datetime, timezone as _tz
+                from demos.kn3.core_utils import safe_doc as _safe_doc
+                db_name = os.environ.get("DB_NAME", "test_database")
+                kbs3_db = mongo_client()[db_name]
+                session = _safe_doc(
+                    await kbs3_db.demo_sessions.find_one({"id": session_id}, {"_id": 0})
+                )
+                if session:
+                    short_id = session_id.replace("-", "")[:16]
+                    demo_db = mongo_client()[f"demo_kn3_{short_id}"]
+                    token = set_kn3_demo_db(demo_db)
+                    try:
+                        response = await call_next(request)
+                    finally:
+                        reset_kn3_demo_db(token)
+                    return response
+            except Exception:
+                pass
+        # No valid session — still allow auth/login endpoint to pass through
+        if "/auth/login" in str(request.url.path) or "/auth/me" in str(request.url.path):
+            return await call_next(request)
+        # For other demo routes without valid session, still try (will fail at db access)
+        return await call_next(request)
+
+    return await call_next(request)
 
 
 # --- Consistent error envelope (KTI_05) ------------------------------------
@@ -95,6 +157,20 @@ app.include_router(seo_ai_router.router, prefix="/api/seo", tags=["SEO AI"])
 app.include_router(integrations_router.router)
 app.include_router(search_router.router)
 app.include_router(notifications_router.router)
+app.include_router(demo_router.router)
+
+# --- Demo KN3 Routers -------------------------------------------------------
+app.include_router(kn3_auth_router.router)
+app.include_router(kn3_dashboard_router.router)
+app.include_router(kn3_products_router.router)
+app.include_router(kn3_inventory_router.router)
+app.include_router(kn3_warehouses_router.router)
+app.include_router(kn3_customers_router.router)
+app.include_router(kn3_sales_orders_router.router)
+app.include_router(kn3_uoms_router.router)
+app.include_router(kn3_wms_router.router)
+app.include_router(kn3_inbound_router.router)
+app.include_router(kn3_outbound_router.router)
 
 
 @app.get("/api/")
