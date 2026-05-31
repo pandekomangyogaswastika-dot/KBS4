@@ -1,18 +1,17 @@
 """
-Phase 15 Backend Testing: Real-time Notifications via WebSocket
-Tests notification REST endpoints, event triggers, and regression.
+Phase 16 Backend Testing: Demo Sandbox Engine
+Tests demo session creation, KN3 WMS endpoints, and data seeding.
 
 Tests:
-- NEW: GET /api/notifications (list with unread count)
-- NEW: GET /api/notifications/unread-count
-- NEW: POST /api/notifications/{id}/read
-- NEW: POST /api/notifications/read-all
-- NEW: DELETE /api/notifications/{id}
-- NEW: GET /api/admin/realtime/stats (admin only)
-- NEW: Lead creation triggers lead.created notification
-- NEW: Project creation triggers project.created notification
-- NEW: Project status change triggers project.status_changed notification
-- REGRESSION: Admin dashboard, Projects, Leads still working
+- POST /api/demo/sessions (creates session with 11 products, 3 warehouses, 5 orders)
+- GET /api/demo/sessions/{id} (validates active session, returns remaining_minutes)
+- GET /api/demo/kn3/dashboard (returns metrics)
+- GET /api/demo/kn3/products (returns list)
+- GET /api/demo/kn3/sales-orders (returns orders)
+- GET /api/demo/kn3/warehouses (returns 3 warehouses)
+- GET /api/demo/kn3/document-templates (returns empty array, not 404)
+- GET /api/demo/kn3/admin/permissions (returns matrix)
+- DELETE /api/demo/sessions/{id} (cleanup)
 """
 import requests
 import sys
@@ -20,16 +19,12 @@ import time
 
 BASE_URL = "https://dev-context-setup-1.preview.emergentagent.com/api"
 
-class Phase15Tester:
+class Phase16Tester:
     def __init__(self):
-        self.admin_token = None
-        self.staff_token = None
-        self.client_token = None
         self.tests_run = 0
         self.tests_passed = 0
         self.failed_tests = []
-        self.created_lead_id = None
-        self.created_project_id = None
+        self.session_id = None
         
     def log(self, msg):
         print(f"  {msg}")
@@ -52,313 +47,259 @@ class Phase15Tester:
             self.failed_tests.append({"name": name, "error": f"Exception: {e}"})
             return False
     
-    def login(self, email, password):
-        """Login and return token."""
-        r = requests.post(f"{BASE_URL}/auth/login", json={"email": email, "password": password})
-        assert r.status_code == 200, f"Login failed: {r.status_code} {r.text}"
-        data = r.json().get("data", {})
-        token = data.get("access_token")
-        assert token, "No access_token in response"
-        return token
-    
     def get(self, endpoint, token=None, expected_status=200):
         """GET request helper."""
-        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        headers = {}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
         r = requests.get(f"{BASE_URL}{endpoint}", headers=headers)
         if expected_status:
             assert r.status_code == expected_status, f"Expected {expected_status}, got {r.status_code}: {r.text}"
         return r
     
-    def post(self, endpoint, data, token=None, expected_status=200):
+    def post(self, endpoint, data, expected_status=200):
         """POST request helper."""
-        headers = {"Authorization": f"Bearer {token}"} if token else {}
-        r = requests.post(f"{BASE_URL}{endpoint}", json=data, headers=headers)
+        r = requests.post(f"{BASE_URL}{endpoint}", json=data)
         if expected_status:
             assert r.status_code == expected_status, f"Expected {expected_status}, got {r.status_code}: {r.text}"
         return r
     
-    def patch(self, endpoint, data, token=None, expected_status=200):
-        """PATCH request helper."""
-        headers = {"Authorization": f"Bearer {token}"} if token else {}
-        r = requests.patch(f"{BASE_URL}{endpoint}", json=data, headers=headers)
-        if expected_status:
-            assert r.status_code == expected_status, f"Expected {expected_status}, got {r.status_code}: {r.text}"
-        return r
-    
-    def delete(self, endpoint, token=None, expected_status=200):
+    def delete(self, endpoint, expected_status=200):
         """DELETE request helper."""
-        headers = {"Authorization": f"Bearer {token}"} if token else {}
-        r = requests.delete(f"{BASE_URL}{endpoint}", headers=headers)
+        r = requests.delete(f"{BASE_URL}{endpoint}")
         if expected_status:
             assert r.status_code == expected_status, f"Expected {expected_status}, got {r.status_code}: {r.text}"
         return r
     
-    # ========== AUTH SETUP ==========
+    # ========== PHASE 16: DEMO SESSION CREATION ==========
     
-    def test_auth_setup(self):
-        """Login as admin, staff, and client."""
-        self.log("Logging in as admin...")
-        self.admin_token = self.login("admin@kubus.id", "Admin#2026")
-        self.log("✓ Admin logged in")
-        
-        self.log("Logging in as staff...")
-        self.staff_token = self.login("staff@kubus.id", "Staff#2026")
-        self.log("✓ Staff logged in")
-        
-        self.log("Logging in as client...")
-        self.client_token = self.login("client@kubus.id", "Client#2026")
-        self.log("✓ Client logged in")
-    
-    # ========== PHASE 15: NOTIFICATION REST ENDPOINTS ==========
-    
-    def test_notifications_list(self):
-        """GET /api/notifications returns list with unread count."""
-        r = self.get("/notifications", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        assert "items" in data, "Missing 'items' in response"
-        assert "total" in data, "Missing 'total' in response"
-        assert "unread" in data, "Missing 'unread' in response"
-        assert isinstance(data["items"], list), "items should be a list"
-        assert isinstance(data["unread"], int), "unread should be an integer"
-        self.log(f"✓ Got {len(data['items'])} notifications, {data['unread']} unread")
-    
-    def test_notifications_unread_count(self):
-        """GET /api/notifications/unread-count returns integer count."""
-        r = self.get("/notifications/unread-count", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        assert "unread" in data, "Missing 'unread' in response"
-        assert isinstance(data["unread"], int), "unread should be an integer"
-        self.log(f"✓ Unread count: {data['unread']}")
-    
-    def test_notifications_mark_read(self):
-        """POST /api/notifications/{id}/read marks single notification as read."""
-        # First get a notification
-        r = self.get("/notifications?unread_only=true", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        items = data.get("items", [])
-        
-        if not items:
-            self.log("⚠ No unread notifications to test mark-read")
-            return
-        
-        notif_id = items[0]["id"]
-        self.log(f"Testing mark-read on notification: {notif_id}")
-        
-        # Mark as read
-        r2 = self.post(f"/notifications/{notif_id}/read", {}, token=self.admin_token, expected_status=200)
-        result = r2.json().get("data", {})
-        assert result.get("id") == notif_id, "ID mismatch"
-        assert result.get("read") == True, "Should be marked as read"
-        self.log(f"✓ Notification {notif_id} marked as read")
-    
-    def test_notifications_mark_all_read(self):
-        """POST /api/notifications/read-all marks all as read."""
-        r = self.post("/notifications/read-all", {}, token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        assert "modified" in data, "Missing 'modified' in response"
-        self.log(f"✓ Marked {data['modified']} notifications as read")
-    
-    def test_notifications_delete(self):
-        """DELETE /api/notifications/{id} removes notification."""
-        # First get a notification
-        r = self.get("/notifications?limit=1", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        items = data.get("items", [])
-        
-        if not items:
-            self.log("⚠ No notifications to test delete")
-            return
-        
-        notif_id = items[0]["id"]
-        self.log(f"Testing delete on notification: {notif_id}")
-        
-        # Delete
-        r2 = self.delete(f"/notifications/{notif_id}", token=self.admin_token, expected_status=200)
-        result = r2.json().get("data", {})
-        assert result.get("deleted") == True, "Should return deleted=True"
-        self.log(f"✓ Notification {notif_id} deleted")
-    
-    def test_admin_realtime_stats(self):
-        """GET /api/admin/realtime/stats returns connection stats (admin only)."""
-        # Admin can access
-        r = self.get("/admin/realtime/stats", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        assert "connected_users" in data, "Missing 'connected_users'"
-        assert "total_sockets" in data, "Missing 'total_sockets'"
-        assert "topics" in data, "Missing 'topics'"
-        self.log(f"✓ Realtime stats: {data['connected_users']} users, {data['total_sockets']} sockets")
-        
-        # Staff should get 403
-        r2 = self.get("/admin/realtime/stats", token=self.staff_token, expected_status=403)
-        self.log("✓ Staff correctly forbidden")
-    
-    # ========== PHASE 15: EVENT TRIGGERS ==========
-    
-    def test_lead_creation_triggers_notification(self):
-        """POST /api/leads creates lead AND triggers lead.created notification."""
-        # Get initial unread count for admin
-        r1 = self.get("/notifications/unread-count", token=self.admin_token, expected_status=200)
-        unread_before = r1.json().get("data", {}).get("unread", 0)
-        self.log(f"Unread before: {unread_before}")
-        
-        # Create a lead
-        lead_data = {
-            "name": "Test Lead Phase 15",
-            "email": f"testlead{int(time.time())}@example.com",
+    def test_create_demo_session(self):
+        """POST /api/demo/sessions creates session with seeded data."""
+        session_data = {
+            "name": "Test User",
+            "email": "test@demo.com",
             "company": "Test Company",
-            "phone": "+62123456789",
-            "message": "This is a test lead for Phase 15 notification testing",
-            "source": "contact_form"
+            "app_slug": "kn3"
         }
-        r2 = self.post("/leads", lead_data, expected_status=201)
-        lead_id = r2.json().get("data", {}).get("id")
-        assert lead_id, "Lead ID not returned"
-        self.created_lead_id = lead_id
-        self.log(f"✓ Lead created: {lead_id}")
+        r = self.post("/demo/sessions", session_data, expected_status=201)
+        data = r.json()
         
-        # Wait a bit for notification to be created
-        time.sleep(1)
+        # Validate response structure
+        assert "session_id" in data, "Missing session_id"
+        assert "token" in data, "Missing token"
+        assert "expires_at" in data, "Missing expires_at"
+        assert "ttl_minutes" in data, "Missing ttl_minutes"
+        assert "app_slug" in data, "Missing app_slug"
+        assert "demo_url" in data, "Missing demo_url"
+        assert "seed_summary" in data, "Missing seed_summary"
         
-        # Check if notification was created for admin
-        r3 = self.get("/notifications/unread-count", token=self.admin_token, expected_status=200)
-        unread_after = r3.json().get("data", {}).get("unread", 0)
-        self.log(f"Unread after: {unread_after}")
+        self.session_id = data["session_id"]
+        self.log(f"✓ Session created: {self.session_id}")
+        self.log(f"✓ TTL: {data['ttl_minutes']} minutes")
+        self.log(f"✓ Demo URL: {data['demo_url']}")
         
-        # Check recent notifications for lead.created
-        r4 = self.get("/notifications?limit=5", token=self.admin_token, expected_status=200)
-        items = r4.json().get("data", {}).get("items", [])
-        lead_notif = [n for n in items if n.get("type") == "lead.created" and lead_id in str(n.get("metadata", {}))]
+        # Validate seed_summary
+        seed = data["seed_summary"]
+        assert "products" in seed, "Missing products in seed_summary"
+        assert "warehouses" in seed, "Missing warehouses in seed_summary"
+        assert "orders" in seed, "Missing orders in seed_summary"
         
-        if lead_notif:
-            self.log(f"✓ lead.created notification found: {lead_notif[0].get('title')}")
-        else:
-            self.log(f"⚠ lead.created notification not found in recent notifications (may have been created)")
+        # Check expected counts
+        assert seed["products"] == 11, f"Expected 11 products, got {seed['products']}"
+        assert seed["warehouses"] == 3, f"Expected 3 warehouses, got {seed['warehouses']}"
+        assert seed["orders"] == 5, f"Expected 5 orders, got {seed['orders']}"
+        
+        self.log(f"✓ Seed summary: {seed['products']} products, {seed['warehouses']} warehouses, {seed['orders']} orders")
     
-    def test_project_creation_triggers_notification(self):
-        """POST /api/projects creates project AND triggers project.created notification."""
-        # Get initial unread count for admin
-        r1 = self.get("/notifications/unread-count", token=self.admin_token, expected_status=200)
-        unread_before = r1.json().get("data", {}).get("unread", 0)
+    def test_get_demo_session(self):
+        """GET /api/demo/sessions/{id} validates session and returns remaining_minutes."""
+        if not self.session_id:
+            raise AssertionError("No session_id available (create session first)")
         
-        # Create a project
-        project_data = {
-            "name": f"Test Project Phase 15 {int(time.time())}",
-            "status": "active",
-            "progress": 0,
-            "summary": "Test project for Phase 15 notification testing"
-        }
-        r2 = self.post("/projects", project_data, token=self.admin_token, expected_status=200)
-        project_id = r2.json().get("data", {}).get("id")
-        assert project_id, "Project ID not returned"
-        self.created_project_id = project_id
-        self.log(f"✓ Project created: {project_id}")
+        r = self.get(f"/demo/sessions/{self.session_id}", expected_status=200)
+        data = r.json()
         
-        # Wait a bit for notification to be created
-        time.sleep(1)
+        # Validate response structure
+        assert "id" in data, "Missing id"
+        assert "name" in data, "Missing name"
+        assert "email" in data, "Missing email"
+        assert "expires_at" in data, "Missing expires_at"
+        assert "remaining_minutes" in data, "Missing remaining_minutes"
+        assert "remaining_seconds" in data, "Missing remaining_seconds"
         
-        # Check recent notifications for project.created
-        r3 = self.get("/notifications?limit=5", token=self.admin_token, expected_status=200)
-        items = r3.json().get("data", {}).get("items", [])
-        project_notif = [n for n in items if n.get("type") == "project.created" and project_id in str(n.get("metadata", {}))]
+        assert data["id"] == self.session_id, "Session ID mismatch"
+        assert data["name"] == "Test User", "Name mismatch"
+        assert data["email"] == "test@demo.com", "Email mismatch"
+        assert isinstance(data["remaining_minutes"], int), "remaining_minutes should be integer"
+        assert data["remaining_minutes"] > 0, "remaining_minutes should be positive"
         
-        if project_notif:
-            self.log(f"✓ project.created notification found: {project_notif[0].get('title')}")
-        else:
-            self.log(f"⚠ project.created notification not found in recent notifications")
+        self.log(f"✓ Session validated: {data['id']}")
+        self.log(f"✓ Remaining time: {data['remaining_minutes']} minutes ({data['remaining_seconds']} seconds)")
     
-    def test_project_status_change_triggers_notification(self):
-        """PATCH /api/projects/{id} with status change triggers project.status_changed notification."""
-        if not self.created_project_id:
-            self.log("⚠ No project to test status change")
+    # ========== PHASE 16: KN3 DEMO ENDPOINTS ==========
+    
+    def test_kn3_dashboard(self):
+        """GET /api/demo/kn3/dashboard returns metrics."""
+        if not self.session_id:
+            raise AssertionError("No session_id available")
+        
+        r = self.get("/demo/kn3/dashboard", token=self.session_id, expected_status=200)
+        data = r.json()
+        
+        # Dashboard returns nested structure with metrics
+        assert "metrics" in data, "Missing metrics in response"
+        metrics = data["metrics"]
+        
+        # Validate metrics structure
+        assert "products" in metrics, "Missing products metric"
+        assert "warehouses" in metrics, "Missing warehouses metric"
+        assert "active_orders" in metrics, "Missing active_orders metric"
+        assert "available_qty" in metrics, "Missing available_qty metric"
+        assert "reserved_qty" in metrics, "Missing reserved_qty metric"
+        
+        # Check expected values
+        assert metrics["products"] == 11, f"Expected 11 products, got {metrics['products']}"
+        assert metrics["warehouses"] == 3, f"Expected 3 warehouses, got {metrics['warehouses']}"
+        
+        self.log(f"✓ Dashboard metrics: {metrics['products']} products, {metrics['warehouses']} warehouses, {metrics['active_orders']} active orders")
+        self.log(f"✓ Inventory: {metrics['available_qty']} available, {metrics['reserved_qty']} reserved")
+    
+    def test_kn3_products(self):
+        """GET /api/demo/kn3/products returns list of products."""
+        if not self.session_id:
+            raise AssertionError("No session_id available")
+        
+        r = self.get("/demo/kn3/products", token=self.session_id, expected_status=200)
+        data = r.json()
+        
+        assert isinstance(data, list), "Expected list of products"
+        assert len(data) == 11, f"Expected 11 products, got {len(data)}"
+        
+        # Validate product structure
+        if data:
+            product = data[0]
+            assert "id" in product, "Product missing id"
+            assert "name" in product, "Product missing name"
+            assert "sku" in product, "Product missing sku"
+            self.log(f"✓ Sample product: {product.get('name')} (SKU: {product.get('sku')})")
+        
+        self.log(f"✓ Got {len(data)} products")
+    
+    def test_kn3_sales_orders(self):
+        """GET /api/demo/kn3/sales-orders returns list of orders."""
+        if not self.session_id:
+            raise AssertionError("No session_id available")
+        
+        r = self.get("/demo/kn3/sales-orders", token=self.session_id, expected_status=200)
+        data = r.json()
+        
+        assert isinstance(data, list), "Expected list of orders"
+        assert len(data) == 5, f"Expected 5 orders, got {len(data)}"
+        
+        # Validate order structure
+        if data:
+            order = data[0]
+            assert "id" in order, "Order missing id"
+            assert "status" in order, "Order missing status"
+            self.log(f"✓ Sample order: {order.get('id')} (status: {order.get('status')})")
+        
+        self.log(f"✓ Got {len(data)} orders")
+    
+    def test_kn3_warehouses(self):
+        """GET /api/demo/kn3/warehouses returns 3 warehouses."""
+        if not self.session_id:
+            raise AssertionError("No session_id available")
+        
+        r = self.get("/demo/kn3/warehouses", token=self.session_id, expected_status=200)
+        data = r.json()
+        
+        assert isinstance(data, list), "Expected list of warehouses"
+        assert len(data) == 3, f"Expected 3 warehouses, got {len(data)}"
+        
+        # Validate warehouse structure
+        if data:
+            warehouse = data[0]
+            assert "id" in warehouse, "Warehouse missing id"
+            assert "name" in warehouse, "Warehouse missing name"
+            self.log(f"✓ Sample warehouse: {warehouse.get('name')}")
+        
+        self.log(f"✓ Got {len(data)} warehouses")
+    
+    def test_kn3_document_templates(self):
+        """GET /api/demo/kn3/document-templates returns empty array (not 404)."""
+        if not self.session_id:
+            raise AssertionError("No session_id available")
+        
+        r = self.get("/demo/kn3/document-templates", token=self.session_id, expected_status=200)
+        data = r.json()
+        
+        assert isinstance(data, list), "Expected list (array)"
+        assert len(data) == 0, f"Expected empty array, got {len(data)} items"
+        
+        self.log(f"✓ Got empty array (not 404)")
+    
+    def test_kn3_admin_permissions(self):
+        """GET /api/demo/kn3/admin/permissions returns matrix."""
+        if not self.session_id:
+            raise AssertionError("No session_id available")
+        
+        r = self.get("/demo/kn3/admin/permissions", token=self.session_id, expected_status=200)
+        data = r.json()
+        
+        assert "matrix" in data, "Missing matrix"
+        assert "actions" in data, "Missing actions"
+        assert isinstance(data["matrix"], dict), "matrix should be dict"
+        assert isinstance(data["actions"], list), "actions should be list"
+        
+        self.log(f"✓ Got permissions matrix with {len(data['actions'])} actions")
+    
+    # ========== CLEANUP ==========
+    
+    def test_delete_demo_session(self):
+        """DELETE /api/demo/sessions/{id} cleans up session."""
+        if not self.session_id:
+            self.log("⚠ No session to delete")
             return
         
-        # Change project status
-        patch_data = {"status": "on_hold"}
-        r = self.patch(f"/projects/{self.created_project_id}", patch_data, token=self.admin_token, expected_status=200)
-        self.log(f"✓ Project status changed to on_hold")
+        r = self.delete(f"/demo/sessions/{self.session_id}", expected_status=200)
+        data = r.json()
         
-        # Wait a bit for notification to be created
-        time.sleep(1)
+        assert "deleted" in data, "Missing deleted field"
+        assert data["deleted"] == True, "Should return deleted=True"
+        assert data["session_id"] == self.session_id, "Session ID mismatch"
         
-        # Check recent notifications for project.status_changed
-        r2 = self.get("/notifications?limit=5", token=self.admin_token, expected_status=200)
-        items = r2.json().get("data", {}).get("items", [])
-        status_notif = [n for n in items if n.get("type") == "project.status_changed" and self.created_project_id in str(n.get("metadata", {}))]
-        
-        if status_notif:
-            self.log(f"✓ project.status_changed notification found: {status_notif[0].get('title')}")
-        else:
-            self.log(f"⚠ project.status_changed notification not found in recent notifications")
-    
-    # ========== REGRESSION TESTS ==========
-    
-    def test_regression_admin_dashboard(self):
-        """Admin dashboard endpoints still working."""
-        # Test auth/me
-        r = self.get("/auth/me", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        assert data.get("email") == "admin@kubus.id", "Email mismatch"
-        self.log("✓ GET /api/auth/me working")
-    
-    def test_regression_projects_list(self):
-        """GET /api/projects still working."""
-        r = self.get("/projects", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", [])
-        assert isinstance(data, list), "Expected list of projects"
-        self.log(f"✓ GET /api/projects working ({len(data)} projects)")
-    
-    def test_regression_leads_list(self):
-        """GET /api/leads still working."""
-        r = self.get("/leads", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        assert "items" in data, "Missing items"
-        self.log(f"✓ GET /api/leads working ({data.get('total', 0)} leads)")
-    
-    def test_regression_public_homepage(self):
-        """Public website homepage loads without error."""
-        # Test public services endpoint
-        r = self.get("/services", expected_status=200)
-        data = r.json().get("data", [])
-        assert isinstance(data, list), "Expected list of services"
-        self.log(f"✓ GET /api/services working ({len(data)} services)")
+        self.log(f"✓ Session {self.session_id} deleted")
     
     # ========== RUN ALL TESTS ==========
     
     def run_all(self):
         print("\n" + "="*80)
-        print("PHASE 15 BACKEND TESTING: Real-time Notifications via WebSocket")
+        print("PHASE 16 BACKEND TESTING: Demo Sandbox Engine")
         print("="*80)
-        
-        # Auth setup
-        self.test("Auth Setup (admin/staff/client login)", self.test_auth_setup)
         
         print("\n" + "="*80)
-        print("PHASE 15: NOTIFICATION REST ENDPOINTS")
+        print("DEMO SESSION MANAGEMENT")
         print("="*80)
         
-        self.test("GET /api/notifications (list with unread count)", self.test_notifications_list)
-        self.test("GET /api/notifications/unread-count", self.test_notifications_unread_count)
-        self.test("POST /api/notifications/{id}/read", self.test_notifications_mark_read)
-        self.test("POST /api/notifications/read-all", self.test_notifications_mark_all_read)
-        self.test("DELETE /api/notifications/{id}", self.test_notifications_delete)
-        self.test("GET /api/admin/realtime/stats (admin only)", self.test_admin_realtime_stats)
+        self.test("POST /api/demo/sessions (create session with seeded data)", self.test_create_demo_session)
+        self.test("GET /api/demo/sessions/{id} (validate session)", self.test_get_demo_session)
         
         print("\n" + "="*80)
-        print("PHASE 15: EVENT TRIGGERS")
+        print("KN3 DEMO ENDPOINTS")
         print("="*80)
         
-        self.test("Lead creation triggers lead.created notification", self.test_lead_creation_triggers_notification)
-        self.test("Project creation triggers project.created notification", self.test_project_creation_triggers_notification)
-        self.test("Project status change triggers project.status_changed notification", self.test_project_status_change_triggers_notification)
+        self.test("GET /api/demo/kn3/dashboard (metrics)", self.test_kn3_dashboard)
+        self.test("GET /api/demo/kn3/products (11 products)", self.test_kn3_products)
+        self.test("GET /api/demo/kn3/sales-orders (5 orders)", self.test_kn3_sales_orders)
+        self.test("GET /api/demo/kn3/warehouses (3 warehouses)", self.test_kn3_warehouses)
+        self.test("GET /api/demo/kn3/document-templates (empty array)", self.test_kn3_document_templates)
+        self.test("GET /api/demo/kn3/admin/permissions (matrix)", self.test_kn3_admin_permissions)
         
         print("\n" + "="*80)
-        print("REGRESSION TESTS")
+        print("CLEANUP")
         print("="*80)
         
-        self.test("Admin dashboard (GET /api/auth/me)", self.test_regression_admin_dashboard)
-        self.test("Projects list (GET /api/projects)", self.test_regression_projects_list)
-        self.test("Leads list (GET /api/leads)", self.test_regression_leads_list)
-        self.test("Public homepage (GET /api/services)", self.test_regression_public_homepage)
+        self.test("DELETE /api/demo/sessions/{id} (cleanup)", self.test_delete_demo_session)
         
         # Summary
         print("\n" + "="*80)
@@ -373,5 +314,5 @@ class Phase15Tester:
         return 0 if self.tests_passed == self.tests_run else 1
 
 if __name__ == "__main__":
-    tester = Phase15Tester()
+    tester = Phase16Tester()
     sys.exit(tester.run_all())

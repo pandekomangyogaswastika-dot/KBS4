@@ -51,6 +51,7 @@ from demos.kn3.routers import uoms as kn3_uoms_router  # noqa: E402
 from demos.kn3.routers import wms as kn3_wms_router  # noqa: E402
 from demos.kn3.routers import inbound_receiving as kn3_inbound_router  # noqa: E402
 from demos.kn3.routers import outbound_picking as kn3_outbound_router  # noqa: E402
+from demos.kn3.routers import document_templates as kn3_doc_router  # noqa: E402
 from seed_email_templates import seed_email_templates  # noqa: E402
 from security import require_role  # noqa: E402
 from cache import cache_stats, clear_all  # noqa: E402
@@ -171,6 +172,7 @@ app.include_router(kn3_uoms_router.router)
 app.include_router(kn3_wms_router.router)
 app.include_router(kn3_inbound_router.router)
 app.include_router(kn3_outbound_router.router)
+app.include_router(kn3_doc_router.router)
 
 
 @app.get("/api/")

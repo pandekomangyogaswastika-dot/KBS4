@@ -1,0 +1,44 @@
+{
+  "summary": "Phase 16 - Demo Sandbox Engine testing completed. All backend APIs working correctly. Fixed critical frontend bug (MetricCard icon prop). Complete demo flow tested end-to-end successfully.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "POST /api/demo/sessions - creates session with 11 products, 3 warehouses, 5 orders",
+    "GET /api/demo/sessions/{id} - validates session and returns remaining_minutes",
+    "GET /api/demo/kn3/dashboard - returns metrics (11 products, 3 warehouses, 4 active orders)",
+    "GET /api/demo/kn3/products - returns 11 products",
+    "GET /api/demo/kn3/sales-orders - returns 5 orders",
+    "GET /api/demo/kn3/warehouses - returns 3 warehouses",
+    "GET /api/demo/kn3/document-templates - returns empty array (not 404)",
+    "GET /api/demo/kn3/admin/permissions - returns permissions matrix",
+    "DELETE /api/demo/sessions/{id} - cleanup works correctly",
+    "Case detail page /cases/nusantara-textile-wms shows demo CTA button",
+    "Clicking demo CTA opens DemoGateForm modal with all required fields",
+    "Submitting form (name=Test User, email=test@demo.com) redirects to /demo/kn3?session=xxx",
+    "DemoPage loads KN3DemoApp with DemoBanner showing MODE DEMO label",
+    "DemoBanner shows user name, session timer, and exit button",
+    "KN3DemoApp SalesPortal renders without crash with all metric cards",
+    "Exit button successfully returns to /cases page"
+  ],
+  "test_report_links": [
+    "/app/backend/backend_test.py"
+  ],
+  "success_percentage": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (all flows working)"
+  },
+  "updated_files": [
+    "/app/backend/backend_test.py",
+    "/app/frontend/src/demos/kn3/KN3DemoApp.jsx"
+  ],
+  "action_item_for_main_agent": "",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_test_itself": false
+}
