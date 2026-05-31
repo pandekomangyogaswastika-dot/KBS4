@@ -1,18 +1,30 @@
 [
   {
-    "content": "Phase 19: Integrate testimonials in homepage",
+    "content": "Refactor 5 Phase 19 routers untuk return success_response() format (testimonials, faq, packages, legal, resources)",
+    "status": "completed"
+  },
+  {
+    "content": "Tambahkan defensive _shape() helper di tiap router untuk auto-fill default field yang opsional",
+    "status": "completed"
+  },
+  {
+    "content": "Restart backend dan verifikasi semua endpoint Phase 19 return {success, data} dengan curl",
+    "status": "completed"
+  },
+  {
+    "content": "Fix Mixed Content (HTTPS→HTTP) issue dengan mengubah route path dari '/' ke '' (no trailing slash)",
+    "status": "completed"
+  },
+  {
+    "content": "Verifikasi 5 frontend pages (Homepage Testimonials, /faq, /pricing, /resources, /privacy-policy) memuat data tanpa error",
+    "status": "completed"
+  },
+  {
+    "content": "Update plan.md - Phase 19 backend stabilized",
+    "status": "completed"
+  },
+  {
+    "content": "User review fase ini sebelum lanjut ke i18n & testing agent",
     "status": "in_progress"
-  },
-  {
-    "content": "Phase 19: Create comprehensive seed data script",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 19: Add translation keys",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 19: Restart services and test",
-    "status": "pending"
   }
 ]

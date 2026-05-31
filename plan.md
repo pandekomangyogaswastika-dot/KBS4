@@ -173,7 +173,51 @@ Fokus pada UI/UX public marketing site:
 
 ---
 
-## Phase 19 — IT Solution Company Content Completion (Trust + Authority) 🟡 PLANNED
+## Phase 19 — IT Solution Company Content Completion (Trust + Authority) ✅ BACKEND STABILIZED — Awaiting User Review
+
+### Phase 19 Backend Stabilization (2026-05-31) ✅
+**Issue resolved:** Phase 19 endpoints (`/api/testimonials`, `/api/faq`, `/api/packages`, `/api/legal`, `/api/resources`) sebelumnya gagal karena:
+1. Pydantic `ResponseValidationError` (missing `services_included` field) — RESOLVED
+2. Response shape tidak konsisten dengan `apiClient.useFetch` (raw array vs `{success, data}` wrapper) — RESOLVED
+3. FastAPI 307 trailing-slash redirect ke `http://` (Mixed Content blocked oleh browser HTTPS) — RESOLVED
+
+**Fixes applied:**
+- Refactor semua 5 router Phase 19 (testimonials, faq, packages, legal, resources):
+  - Hapus `response_model=...` pada GET list/single endpoints (untuk wrapping fleksibel)
+  - Tambahkan helper `_shape()` per router yang fill default `Optional` field secara defensif
+  - Wrap semua response dengan `success_response()` untuk format konsisten `{success, data}`
+  - Ubah route path dari `"/"` ke `""` (sejalan dengan pattern `content.py`) untuk hindari 307 redirect
+- Pydantic `Create`/`Update` models tetap dipakai untuk input validation (admin POST/PATCH)
+
+**Verifikasi (E2E):**
+| Endpoint | HTTP | Items | UI Verified |
+|---|---|---|---|
+| GET /api/testimonials?featured=true | 200 | 4 | ✅ Home carousel |
+| GET /api/faq | 200 | 8 | ✅ /faq page (accordions) |
+| GET /api/packages | 200 | 3 | ✅ /pricing page (3 tier cards) |
+| GET /api/legal | 200 | 2 | ✅ list |
+| GET /api/legal/privacy-policy | 200 | 1 | ✅ /privacy-policy page |
+| GET /api/resources | 200 | 3 | ✅ /resources page (3 cards) |
+
+**Files modified:**
+- `/app/backend/routers/testimonials.py`
+- `/app/backend/routers/faq.py`
+- `/app/backend/routers/packages.py`
+- `/app/backend/routers/legal.py`
+- `/app/backend/routers/resources.py`
+
+### Phase 19 Remaining Items (next iterations)
+- [ ] i18n: Add Phase 19 translation keys (id/en) di `frontend/src/i18n/`
+- [ ] Polish: Fix `tierOrder["starter"]=0` falsy bug in `PricingPage.jsx` (`||` should be `??`)
+- [ ] Polish: Legal page typography (enable `@tailwindcss/typography` plugin)
+- [ ] Footer links untuk legal pages
+- [ ] Privacy disclaimer pada contact/demo gate forms
+- [ ] Run comprehensive `testing_agent` (backend + frontend)
+- [ ] Update `KTI_09_NAVIGATION_MAP.md`
+
+---
+
+## Phase 19 — Original Scope (Reference) 🟡 PLANNED
 
 ### Phase 19.0 Scope
 Melengkapi konten marketing website agar memenuhi standar **IT Solution Company** dan meningkatkan trust + conversion.

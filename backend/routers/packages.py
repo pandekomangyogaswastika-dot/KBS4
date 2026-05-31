@@ -1,6 +1,9 @@
 """
 Phase 19D: Pricing Packages
 CRUD endpoints for service packages/pricing tiers (admin-only write, public read).
+
+Response contract:
+  - All endpoints return {"success": true, "data": ...} (consistent with apiClient.useFetch).
 """
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -9,15 +12,16 @@ from datetime import datetime, timezone
 import uuid
 
 from db import get_db
-from core_utils import success_response
+from core_utils import success_response, serialize_doc
 from security import require_role
 
 router = APIRouter(prefix="/api/packages", tags=["Content"])
 
-# Pydantic models
+
 class BilingualField(BaseModel):
     id: str
     en: str
+
 
 class PackageCreate(BaseModel):
     name: BilingualField
@@ -31,6 +35,7 @@ class PackageCreate(BaseModel):
     order: int = 0
     status: str = "published"
 
+
 class PackageUpdate(BaseModel):
     name: Optional[BilingualField] = None
     tier: Optional[str] = None
@@ -43,70 +48,84 @@ class PackageUpdate(BaseModel):
     order: Optional[int] = None
     status: Optional[str] = None
 
-class PackageResponse(BaseModel):
-    id: str
-    name: BilingualField
-    tier: str
-    services_included: List[str]
-    price_from: Optional[int] = None
-    duration: Optional[str] = None
-    features: List[BilingualField]
-    popular: bool
-    cta_label: Optional[BilingualField]
-    order: int
-    status: str
-    created_at: str
-    updated_at: Optional[str] = None
 
-@router.get("/", response_model=List[PackageResponse])
+def _shape(doc: dict) -> dict:
+    if not doc:
+        return doc
+    d = serialize_doc(dict(doc))
+    d.setdefault("services_included", [])
+    d.setdefault("features", [])
+    d.setdefault("price_from", None)
+    d.setdefault("duration", None)
+    d.setdefault("popular", False)
+    d.setdefault("cta_label", None)
+    d.setdefault("order", 0)
+    d.setdefault("status", "published")
+    d.setdefault("updated_at", None)
+    return d
+
+
+@router.get("")
 async def get_packages(db=Depends(get_db)):
     """Get all packages (public endpoint)."""
     cursor = db.cms_packages.find({"status": "published"}).sort("order", 1)
     items = await cursor.to_list(length=50)
-    return [{"id": p["id"], **{k: v for k, v in p.items() if k != "_id"}} for p in items]
+    return success_response([_shape(p) for p in items])
 
-@router.get("/{package_id}", response_model=PackageResponse)
+
+@router.get("/{package_id}")
 async def get_package(package_id: str, db=Depends(get_db)):
     """Get single package by ID."""
     doc = await db.cms_packages.find_one({"id": package_id})
     if not doc:
         raise HTTPException(404, "Package not found")
-    return {"id": doc["id"], **{k: v for k, v in doc.items() if k != "_id"}}
+    return success_response(_shape(doc))
 
-@router.post("/", response_model=PackageResponse, dependencies=[Depends(require_role("admin"))])
-async def create_package(payload: PackageCreate, db=Depends(get_db), _user=Depends(require_role("admin"))):
+
+@router.post("", dependencies=[Depends(require_role("admin"))])
+async def create_package(
+    payload: PackageCreate,
+    db=Depends(get_db),
+    _user=Depends(require_role("admin")),
+):
     """Create new package (admin only)."""
     doc = {
         "id": str(uuid.uuid4()),
         **payload.dict(),
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "updated_at": None
+        "updated_at": None,
     }
     await db.cms_packages.insert_one(doc)
-    return {"id": doc["id"], **{k: v for k, v in doc.items() if k != "_id"}}
+    return success_response(_shape(doc))
 
-@router.patch("/{package_id}", response_model=PackageResponse, dependencies=[Depends(require_role("admin"))])
+
+@router.patch("/{package_id}", dependencies=[Depends(require_role("admin"))])
 async def update_package(
     package_id: str,
     payload: PackageUpdate,
     db=Depends(get_db),
-    _user=Depends(require_role("admin"))
+    _user=Depends(require_role("admin")),
 ):
     """Update package (admin only)."""
     existing = await db.cms_packages.find_one({"id": package_id})
     if not existing:
         raise HTTPException(404, "Package not found")
-    
+
     update_data = {k: v for k, v in payload.dict(exclude_unset=True).items() if v is not None}
     if update_data:
         update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
         await db.cms_packages.update_one({"id": package_id}, {"$set": update_data})
-    
+
     updated_doc = await db.cms_packages.find_one({"id": package_id})
-    return {"id": updated_doc["id"], **{k: v for k, v in updated_doc.items() if k != "_id"}}
+    return success_response(_shape(updated_doc))
+
 
 @router.delete("/{package_id}", dependencies=[Depends(require_role("admin"))])
-async def delete_package(package_id: str, db=Depends(get_db), _user=Depends(require_role("admin"))):
+async def delete_package(
+    package_id: str,
+    db=Depends(get_db),
+    _user=Depends(require_role("admin")),
+):
     """Delete package (admin only)."""
     result = await db.cms_packages.delete_one({"id": package_id})
     if result.deleted_count == 0:
