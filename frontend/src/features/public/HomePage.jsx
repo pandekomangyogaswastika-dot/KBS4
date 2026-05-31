@@ -22,6 +22,7 @@ import TechGrid from "@/features/public/blocks/TechGrid";
 import CrewGrid from "@/features/public/blocks/CrewGrid";
 import ClientsGrid from "@/features/public/blocks/ClientsGrid";
 import ContactForm from "@/features/public/blocks/ContactForm";
+import TestimonialCarousel from "@/components/kti/TestimonialCarousel";
 import SEOHead, { createOrganizationSchema, createWebsiteSchema } from "@/components/SEOHead";
 
 export default function HomePage() {
@@ -33,6 +34,7 @@ export default function HomePage() {
   const { data: cases } = useFetch("/cases");
   const { data: team } = useFetch("/team");
   const { data: clients } = useFetch("/clients");
+  const { data: testimonials } = useFetch("/testimonials?featured=true");
 
   const stats = settings?.stats || [];
   
@@ -212,6 +214,11 @@ export default function HomePage() {
       >
         <ClientsGrid items={clients || []} />
       </SceneSection>
+
+      {/* Phase 19: Testimonials */}
+      {testimonials && testimonials.length > 0 && (
+        <TestimonialCarousel items={testimonials} />
+      )}
 
       {/* Mission / Contact */}
       <SceneSection

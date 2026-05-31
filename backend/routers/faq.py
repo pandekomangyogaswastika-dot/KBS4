@@ -9,10 +9,10 @@ from datetime import datetime, timezone
 import uuid
 
 from db import get_db
-from util import success_response
+from core_utils import success_response
 from security import require_role
 
-router = APIRouter(prefix="/faq", tags=["Content"])
+router = APIRouter(prefix="/api/faq", tags=["Content"])
 
 # Pydantic models
 class BilingualField(BaseModel):

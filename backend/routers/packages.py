@@ -9,10 +9,10 @@ from datetime import datetime, timezone
 import uuid
 
 from db import get_db
-from util import success_response
+from core_utils import success_response
 from security import require_role
 
-router = APIRouter(prefix="/packages", tags=["Content"])
+router = APIRouter(prefix="/api/packages", tags=["Content"])
 
 # Pydantic models
 class BilingualField(BaseModel):
@@ -21,7 +21,7 @@ class BilingualField(BaseModel):
 
 class PackageCreate(BaseModel):
     name: BilingualField
-    tier: str = Field(..., regex=r'^(starter|professional|enterprise)$')
+    tier: str = Field(..., pattern=r'^(starter|professional|enterprise)$')
     services_included: List[str] = []
     price_from: Optional[int] = None  # in IDR
     duration: Optional[str] = None  # e.g., "per month", "per project"

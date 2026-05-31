@@ -9,10 +9,10 @@ from datetime import datetime, timezone
 import uuid
 
 from db import get_db
-from util import success_response
+from core_utils import success_response
 from security import require_role
 
-router = APIRouter(prefix="/legal", tags=["Content"])
+router = APIRouter(prefix="/api/legal", tags=["Content"])
 
 # Pydantic models
 class BilingualField(BaseModel):
@@ -20,7 +20,7 @@ class BilingualField(BaseModel):
     en: str
 
 class LegalPageCreate(BaseModel):
-    slug: str = Field(..., min_length=1, regex=r'^[a-z0-9-]+$')
+    slug: str = Field(..., min_length=1, pattern=r'^[a-z0-9-]+$')
     title: BilingualField
     content: BilingualField
     version: str = "1.0"

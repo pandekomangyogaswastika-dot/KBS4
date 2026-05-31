@@ -35,6 +35,12 @@ from routers import integrations as integrations_router  # noqa: E402
 from routers import search as search_router  # noqa: E402
 from routers import notifications as notifications_router  # noqa: E402
 from routers import demo as demo_router  # noqa: E402
+# Phase 19: Content Completion routers
+from routers import testimonials as testimonials_router  # noqa: E402
+from routers import legal as legal_router  # noqa: E402
+from routers import faq as faq_router  # noqa: E402
+from routers import packages as packages_router  # noqa: E402
+from routers import resources as resources_router  # noqa: E402
 from demo_context import set_kn3_demo_db, reset_kn3_demo_db  # noqa: E402
 from db import get_client as mongo_client  # noqa: E402
 import re as _re  # noqa: E402
@@ -249,11 +255,11 @@ app.include_router(notifications_router.router)
 app.include_router(demo_router.router)
 
 # Phase 19: Content Completion routers
-app.include_router(testimonials_router.router, prefix="/api")
-app.include_router(legal_router.router, prefix="/api")
-app.include_router(faq_router.router, prefix="/api")
-app.include_router(packages_router.router, prefix="/api")
-app.include_router(resources_router.router, prefix="/api")
+app.include_router(testimonials_router.router)
+app.include_router(legal_router.router)
+app.include_router(faq_router.router)
+app.include_router(packages_router.router)
+app.include_router(resources_router.router)
 
 # --- Demo KN3 Routers -------------------------------------------------------
 app.include_router(kn3_auth_router.router)

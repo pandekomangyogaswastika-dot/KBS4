@@ -1,30 +1,18 @@
 [
   {
-    "content": "Phase 19: Create Resources page + Detail page",
+    "content": "Phase 19: Integrate testimonials in homepage",
     "status": "in_progress"
   },
   {
-    "content": "Phase 19: Create Legal page (dynamic)",
+    "content": "Phase 19: Create comprehensive seed data script",
     "status": "pending"
   },
   {
-    "content": "Phase 19: Create Testimonial component + homepage integration",
+    "content": "Phase 19: Add translation keys",
     "status": "pending"
   },
   {
-    "content": "Phase 19: Update App.js routes",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 19: Update footer with legal links",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 19: Create seed data script",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 19: Testing + validation",
+    "content": "Phase 19: Restart services and test",
     "status": "pending"
   }
 ]
