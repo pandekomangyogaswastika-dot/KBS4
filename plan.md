@@ -33,10 +33,12 @@
     - All 3rd-party integrations must be **configurable via admin settings** (provider selection + credentials + enable/disable).
     - Support **mock providers** for development/testing without external accounts.
 
-**Current status (overall):** Platform delivered through **Phase 14** (Tier 1 selesai 100%).
-- ✅ Phase 9–14 selesai semuanya.
-- 🔄 **Phase 15: Real-time Notifications via WebSocket — IN PROGRESS**
-  - User confirmed scope: Toast + Bell + persisted MongoDB + multi-portal (admin/staff/client) + live updates (project status, approval sign)
+**Current status (overall):** Platform delivered through **Phase 15** ✅ ALL PHASES COMPLETE.
+- ✅ Phase 9–15 selesai semuanya.
+- ✅ **Phase 15: Real-time Notifications via WebSocket — COMPLETE** (2026-05-31)
+  - Scope delivered: Toast + Bell + persisted MongoDB + multi-portal (admin/staff/client) + live updates
+  - Triggers: lead.created, project.created/status_changed/assigned, approval.requested/signed, invoice.created/status_changed, document.uploaded, chat.message
+  - Testing: Backend 93% (1 minor: GET /api/leads returns 405 by design), Frontend 100%, Overall 96%
 
 ---
 
@@ -347,13 +349,17 @@ Implemented routers:
 ---
 
 ## 3) Next Actions (Immediate)
-**Tier 1 COMPLETE** ✅
+**Tier 1 COMPLETE** ✅ **Tier 2 Phase 15 COMPLETE** ✅
 1. ✅ Phase 12: Integrations Settings + Email Notifications (DONE — iteration_8 PASS)
 2. ✅ Phase 13: Performance Optimization (DONE — iteration_9 PASS)
 3. ✅ Phase 14: Advanced Search (DONE — iteration_10 100% PASS)
+4. ✅ Phase 15: Real-time Notifications WebSocket (DONE — iteration_11 96% PASS, 100% frontend)
 
-**Selanjutnya (menunggu konfirmasi user):**
-- Tier 2 improvements (mis. Real-time notifications via WebSocket, Dark/Light theme toggle, Multi-tenant support, Advanced analytics dengan funnels/cohort, Mobile PWA)
+**Selanjutnya (Tier 2 remaining — menunggu konfirmasi user):**
+- Dark/Light theme toggle (ambient + persistent user preference)
+- Multi-tenant support / Custom branding per-client (sub-domain whitelabel)
+- Advanced analytics (funnels/cohort/retention)
+- Mobile PWA
 - Payment gateway aktivasi (Midtrans/Xendit) — skema config sudah disiapkan di Phase 12
 - Custom branding per-client (sub-domain whitelabel)
 - Optional: object storage migration ke S3/R2 (config sudah disiapkan di Phase 12)

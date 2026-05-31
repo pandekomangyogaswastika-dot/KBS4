@@ -17,14 +17,14 @@
   },
   {
     "content": "End-to-end testing Phase 15 dengan testing_agent_v3",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Fix semua bug ditemukan testing agent",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Update plan.md dan docs dengan status Phase 15 SELESAI",
-    "status": "pending"
+    "status": "completed"
   }
 ]

@@ -2,7 +2,13 @@
 
 > State terkini untuk sesi/agent berikutnya. Baca setelah KTI_00.
 
-## Status: Fase 4 (Assessment Module) SELESAI ✅ — Backend 100% (71/71) + Frontend ~98% teruji. Compliance 16/0/0. Fase 1–4 done. Lanjut Fase 5 (Portal Client/Staff penuh + Project Management).
+## Status: Phase 15 (Real-time WebSocket Notifications) SELESAI ✅ — Backend 93%/Frontend 100% teruji (iteration_11). Phase 0–15 SEMUA DONE. Platform fully operational.
+
+### Last Session (2026-05-31)
+- Repo KBS3 di-clone dari GitHub ke environment baru
+- Semua dependencies di-install, env vars di-setup
+- Phase 15 diverifikasi end-to-end: bell icon, badge, popover, mark-read, delete, semua event triggers berfungsi
+- Tier 2 remaining: Dark/Light toggle, Multi-tenant, Advanced analytics, Mobile PWA
 
 ## Yang sudah ada
 - Governance docs: `/app/docs/KTI_00–13` + README.
