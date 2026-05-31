@@ -20,6 +20,13 @@ const BlogDetailPage = lazy(() => import("@/features/public/pages/BlogDetailPage
 const CareerPage = lazy(() => import("@/features/public/pages/CareerPage"));
 const CareerDetailPage = lazy(() => import("@/features/public/pages/CareerDetailPage"));
 const ContactPage = lazy(() => import("@/features/public/pages/ContactPage"));
+// Phase 19: Content Completion pages
+const FaqPage = lazy(() => import("@/features/public/pages/FaqPage"));
+const PricingPage = lazy(() => import("@/features/public/pages/PricingPage"));
+const AboutPage = lazy(() => import("@/features/public/pages/AboutPage"));
+const ResourcesPage = lazy(() => import("@/features/public/pages/ResourcesPage"));
+const ResourceDetailPage = lazy(() => import("@/features/public/pages/ResourceDetailPage"));
+const LegalPage = lazy(() => import("@/features/public/pages/LegalPage"));
 const PortalComingSoon = lazy(() => import("@/features/portal/PortalComingSoon"));
 
 const LoginPage = lazy(() => import("@/features/portal/auth/LoginPage"));
@@ -90,6 +97,14 @@ function App() {
                 <Route path="/career" element={<CareerPage />} />
                 <Route path="/career/:slug" element={<CareerDetailPage />} />
                 <Route path="/contact" element={<ContactPage />} />
+                {/* Phase 19: New public pages */}
+                <Route path="/faq" element={<FaqPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/resources" element={<ResourcesPage />} />
+                <Route path="/resources/:slug" element={<ResourceDetailPage />} />
+                <Route path="/privacy-policy" element={<LegalPage />} />
+                <Route path="/terms-of-service" element={<LegalPage />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
 

@@ -1,22 +1,22 @@
 [
   {
-    "content": "Phase 19: Create all admin CMS pages (Testimonials, Legal, FAQ, Packages, Resources)",
+    "content": "Phase 19: Create Resources page + Detail page",
     "status": "in_progress"
   },
   {
-    "content": "Phase 19: Create all public pages (FAQ, Pricing, About, Resources, Legal)",
+    "content": "Phase 19: Create Legal page (dynamic)",
     "status": "pending"
   },
   {
-    "content": "Phase 19: Create testimonial components + homepage integration",
+    "content": "Phase 19: Create Testimonial component + homepage integration",
     "status": "pending"
   },
   {
-    "content": "Phase 19: Update App.js routes + PublicLayout footer",
+    "content": "Phase 19: Update App.js routes",
     "status": "pending"
   },
   {
-    "content": "Phase 19: Update ENTITY_REGISTRY.md + KTI_09_NAVIGATION_MAP.md",
+    "content": "Phase 19: Update footer with legal links",
     "status": "pending"
   },
   {
