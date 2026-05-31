@@ -1,11 +1,11 @@
 [
   {
     "content": "Phase 19A: Testimonials - Create cms_testimonials collection + backend router",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Phase 19A: Testimonials - Build admin CMS CRUD page",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Phase 19A: Testimonials - Create public testimonial components + homepage integration",
@@ -13,7 +13,7 @@
   },
   {
     "content": "Phase 19B: Legal Pages - Create cms_legal_pages collection + backend router",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 19B: Legal Pages - Build admin CMS CRUD + public pages (/privacy-policy, /terms)",
@@ -25,7 +25,7 @@
   },
   {
     "content": "Phase 19C: FAQ - Create cms_faq collection + backend router",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 19C: FAQ - Build admin CMS CRUD + public /faq page",
@@ -33,7 +33,7 @@
   },
   {
     "content": "Phase 19D: Pricing - Create cms_packages collection + backend router",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 19D: Pricing - Build admin CMS CRUD + public /pricing page",
@@ -45,7 +45,7 @@
   },
   {
     "content": "Phase 19F: Resources - Create cms_resources collection + backend router + admin CRUD + public page",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 19G: Update ENTITY_REGISTRY.md + KTI_09_NAVIGATION_MAP.md",
