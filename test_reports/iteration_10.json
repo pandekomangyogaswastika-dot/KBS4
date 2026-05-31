@@ -1,0 +1,60 @@
+{
+  "summary": "Phase 14 Advanced Search testing completed successfully. All backend endpoints (public + portal with RBAC) working correctly. Frontend search UI functional on public site and both portal layouts (admin/client). RBAC properly enforced (client cannot see leads, admin sees all types). Phase 12 & 13 regressions passing.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "BACKEND PUBLIC: GET /api/search?q=cloud returns 1 result (Layanan group with 'Cloud, DevOps & Infrastructure')",
+    "BACKEND PUBLIC: q=a returns 422 validation error (min 2 chars)",
+    "BACKEND PUBLIC: types=services filter working correctly",
+    "BACKEND PUBLIC: non-existent query returns empty groups array with total=0",
+    "BACKEND PUBLIC: cache working (TTL 30s, hits/misses tracked)",
+    "BACKEND PORTAL: GET /api/portal/search without auth returns 401",
+    "BACKEND PORTAL RBAC: admin sees ALL types (services, cases, projects, documents, leads) with scope=admin",
+    "BACKEND PORTAL RBAC: client does NOT see leads (searching 'Phase12' returns 0 results)",
+    "BACKEND PORTAL RBAC: client sees own projects (client_id match) with correct URL /portal/projects/{id}",
+    "BACKEND PORTAL RBAC: staff sees leads (searching 'Phase12' returns leads group)",
+    "BACKEND PORTAL: types parameter narrows search (types=leads,projects)",
+    "BACKEND PORTAL: response includes {query, total, took_ms, scope, groups}",
+    "FRONTEND PUBLIC: navbar shows 'Cari ⌘K' trigger on large viewports",
+    "FRONTEND PUBLIC: clicking trigger opens CommandDialog",
+    "FRONTEND PUBLIC: typing 'cloud' shows 'Layanan' group with 'Cloud, DevOps & Infrastructure'",
+    "FRONTEND PUBLIC: empty/short queries show 'Mulai mengetik...' message",
+    "FRONTEND PUBLIC: non-matching queries show 'Tidak ada hasil...' message",
+    "FRONTEND PORTAL: admin header shows search trigger (hidden md:inline-flex)",
+    "FRONTEND PORTAL: admin search for 'wms' shows multiple groups (Layanan, Studi Kasus, Proyek, Dokumen)",
+    "FRONTEND PORTAL: client header shows search trigger",
+    "FRONTEND PORTAL: client search for 'Phase12' returns no results (RBAC - no leads access)",
+    "FRONTEND PORTAL: client search for 'wms' shows own project with correct URL routing",
+    "REGRESSION PHASE 12: GET /api/admin/integrations working",
+    "REGRESSION PHASE 12: GET /api/admin/integrations/email/outbox working",
+    "REGRESSION PHASE 13: GET /api/admin/cache/stats working (hits=2, misses=7, size=4)",
+    "REGRESSION PHASE 13: POST /api/admin/cache/flush working",
+    "REGRESSION PHASE 13: GET /api/services still cached and working (8 items)",
+    "REGRESSION: Public pages (/services, /cases, /blog) render without errors"
+  ],
+  "test_report_links": [
+    "/app/backend_test_phase14.py",
+    "/app/.screenshots/phase14_public_search.png",
+    "/app/.screenshots/phase14_admin_search.png",
+    "/app/.screenshots/phase14_client_search_wms.png",
+    "/app/.screenshots/phase14_regression_blog.png"
+  ],
+  "success_percentage": {
+    "backend": "100% (20/20 tests passed)",
+    "frontend": "100% (all UI tests passed)",
+    "overall": "100%"
+  },
+  "updated_files": [
+    "/app/backend_test_phase14.py"
+  ],
+  "action_item_for_main_agent": "",
+  "should_call_test_agent_after_fix": "false",
+  "should_main_agent_test_itself": "false"
+}
