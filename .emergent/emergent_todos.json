@@ -1,42 +1,30 @@
 [
   {
-    "content": "Clone GitHub repository dari pandekomangyogaswastika-dot/KBS3",
+    "content": "Review implementasi Phase 15 yang sudah ada (backend + frontend)",
     "status": "completed"
   },
   {
-    "content": "Baca dan analisis semua dokumen sistem (KTI_00-13, PRD, plan, ENTITY_REGISTRY)",
+    "content": "Audit trigger integrasi notifikasi ke semua event (project/approval/invoice/lead)",
     "status": "completed"
   },
   {
-    "content": "Copy semua backend Python files dari KBS3 ke /app/backend",
+    "content": "Lengkapi/fix notification_service.py untuk trigger dari event",
     "status": "completed"
   },
   {
-    "content": "Copy semua frontend source files dari KBS3 ke /app/frontend",
+    "content": "Verifikasi NotificationBell terintegrasi di AdminLayout & ClientLayout",
     "status": "completed"
   },
   {
-    "content": "Copy config files (tailwind, craco, jsconfig)",
-    "status": "completed"
+    "content": "End-to-end testing Phase 15 dengan testing_agent_v3",
+    "status": "in_progress"
   },
   {
-    "content": "Update backend/.env dengan JWT_SECRET, EMERGENT_LLM_KEY, STORAGE_BACKEND, UPLOAD_DIR",
-    "status": "completed"
+    "content": "Fix semua bug ditemukan testing agent",
+    "status": "pending"
   },
   {
-    "content": "Install missing backend dependencies (reportlab, pillow)",
-    "status": "completed"
-  },
-  {
-    "content": "Install missing frontend dependencies (three, gsap, lenis, i18next, dll)",
-    "status": "completed"
-  },
-  {
-    "content": "Verifikasi sistem berjalan (backend + frontend)",
-    "status": "completed"
-  },
-  {
-    "content": "Review state Phase 15 (Real-time Notifications) dan report ke user",
-    "status": "completed"
+    "content": "Update plan.md dan docs dengan status Phase 15 SELESAI",
+    "status": "pending"
   }
 ]

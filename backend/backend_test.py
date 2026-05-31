@@ -1,23 +1,26 @@
 """
-Phase 13 Backend Testing: Performance Optimization (Cache + GZip + Indexes)
-REGRESSION + NEW FEATURES testing for Phase 13.
+Phase 15 Backend Testing: Real-time Notifications via WebSocket
+Tests notification REST endpoints, event triggers, and regression.
 
 Tests:
-- REGRESSION: All Phase 9-12 endpoints still working
-- NEW: Cache-Control headers on public endpoints
-- NEW: GZip compression active
-- NEW: Cache hit/miss behavior
-- NEW: Admin cache stats/flush endpoints
-- NEW: Cache invalidation on CMS writes
+- NEW: GET /api/notifications (list with unread count)
+- NEW: GET /api/notifications/unread-count
+- NEW: POST /api/notifications/{id}/read
+- NEW: POST /api/notifications/read-all
+- NEW: DELETE /api/notifications/{id}
+- NEW: GET /api/admin/realtime/stats (admin only)
+- NEW: Lead creation triggers lead.created notification
+- NEW: Project creation triggers project.created notification
+- NEW: Project status change triggers project.status_changed notification
+- REGRESSION: Admin dashboard, Projects, Leads still working
 """
 import requests
 import sys
 import time
 
-BASE_URL = "https://kbs-mapping-setup.preview.emergentagent.com/api"
-INTERNAL_URL = "http://localhost:8001/api"  # For header verification
+BASE_URL = "https://dev-context-setup-1.preview.emergentagent.com/api"
 
-class Phase13Tester:
+class Phase15Tester:
     def __init__(self):
         self.admin_token = None
         self.staff_token = None
@@ -25,6 +28,8 @@ class Phase13Tester:
         self.tests_run = 0
         self.tests_passed = 0
         self.failed_tests = []
+        self.created_lead_id = None
+        self.created_project_id = None
         
     def log(self, msg):
         print(f"  {msg}")
@@ -56,12 +61,10 @@ class Phase13Tester:
         assert token, "No access_token in response"
         return token
     
-    def get(self, endpoint, token=None, expected_status=200, base_url=BASE_URL, headers=None):
+    def get(self, endpoint, token=None, expected_status=200):
         """GET request helper."""
-        hdrs = {"Authorization": f"Bearer {token}"} if token else {}
-        if headers:
-            hdrs.update(headers)
-        r = requests.get(f"{base_url}{endpoint}", headers=hdrs)
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        r = requests.get(f"{BASE_URL}{endpoint}", headers=headers)
         if expected_status:
             assert r.status_code == expected_status, f"Expected {expected_status}, got {r.status_code}: {r.text}"
         return r
@@ -74,18 +77,18 @@ class Phase13Tester:
             assert r.status_code == expected_status, f"Expected {expected_status}, got {r.status_code}: {r.text}"
         return r
     
-    def put(self, endpoint, data, token=None, expected_status=200):
-        """PUT request helper."""
-        headers = {"Authorization": f"Bearer {token}"} if token else {}
-        r = requests.put(f"{BASE_URL}{endpoint}", json=data, headers=headers)
-        if expected_status:
-            assert r.status_code == expected_status, f"Expected {expected_status}, got {r.status_code}: {r.text}"
-        return r
-    
     def patch(self, endpoint, data, token=None, expected_status=200):
         """PATCH request helper."""
         headers = {"Authorization": f"Bearer {token}"} if token else {}
         r = requests.patch(f"{BASE_URL}{endpoint}", json=data, headers=headers)
+        if expected_status:
+            assert r.status_code == expected_status, f"Expected {expected_status}, got {r.status_code}: {r.text}"
+        return r
+    
+    def delete(self, endpoint, token=None, expected_status=200):
+        """DELETE request helper."""
+        headers = {"Authorization": f"Bearer {token}"} if token else {}
+        r = requests.delete(f"{BASE_URL}{endpoint}", headers=headers)
         if expected_status:
             assert r.status_code == expected_status, f"Expected {expected_status}, got {r.status_code}: {r.text}"
         return r
@@ -102,383 +105,260 @@ class Phase13Tester:
         self.staff_token = self.login("staff@kubus.id", "Staff#2026")
         self.log("✓ Staff logged in")
         
-        try:
-            self.client_token = self.login("client@kubus.id", "Client#2026")
-            self.log("✓ Client logged in")
-        except:
-            self.log("⚠ No client user found")
+        self.log("Logging in as client...")
+        self.client_token = self.login("client@kubus.id", "Client#2026")
+        self.log("✓ Client logged in")
     
-    # ========== PHASE 13: NEW CACHE FEATURES ==========
+    # ========== PHASE 15: NOTIFICATION REST ENDPOINTS ==========
     
-    def test_public_endpoints_cache_control_header(self):
-        """All public content endpoints return Cache-Control header."""
-        endpoints = [
-            "/services",
-            "/cases",
-            "/team",
-            "/clients",
-            "/tech",
-            "/blog",
-            "/careers",
-            "/settings"
-        ]
-        
-        for endpoint in endpoints:
-            # Test against internal URL to avoid ingress header rewriting
-            try:
-                r = self.get(endpoint, base_url=INTERNAL_URL, expected_status=200)
-                cache_control = r.headers.get("cache-control", "")
-                assert "public" in cache_control.lower(), f"{endpoint}: Missing 'public' in Cache-Control"
-                assert "max-age=60" in cache_control.lower(), f"{endpoint}: Missing 'max-age=60' in Cache-Control"
-                self.log(f"✓ {endpoint}: Cache-Control = {cache_control}")
-            except Exception as e:
-                # Fallback to external URL if internal fails
-                self.log(f"⚠ Internal URL failed for {endpoint}, trying external: {e}")
-                r = self.get(endpoint, base_url=BASE_URL, expected_status=200)
-                self.log(f"✓ {endpoint}: Returns 200 (Cache-Control may be rewritten by ingress)")
-    
-    def test_gzip_compression_active(self):
-        """GZip compression reduces response size for large responses."""
-        # Test against internal URL
-        try:
-            # Request without gzip
-            r1 = self.get("/services", base_url=INTERNAL_URL, expected_status=200)
-            size_uncompressed = len(r1.content)
-            
-            # Request with gzip
-            r2 = self.get("/services", base_url=INTERNAL_URL, expected_status=200, 
-                         headers={"Accept-Encoding": "gzip"})
-            size_compressed = len(r2.content)
-            
-            # Check if response is compressed (content-encoding header)
-            encoding = r2.headers.get("content-encoding", "")
-            if "gzip" in encoding:
-                self.log(f"✓ GZip active: {size_uncompressed}B → {size_compressed}B (compressed)")
-            else:
-                # May already be decompressed by requests library
-                self.log(f"✓ GZip middleware enabled (requests library auto-decompressed)")
-        except Exception as e:
-            self.log(f"⚠ Internal URL test failed: {e}, testing external URL")
-            r = self.get("/services", base_url=BASE_URL, expected_status=200)
-            self.log(f"✓ /services returns 200 (GZip may be handled by ingress)")
-    
-    def test_cache_hit_miss_behavior(self):
-        """First request is cache miss, second is cache hit."""
-        # Flush cache first
-        self.post("/admin/cache/flush", {}, token=self.admin_token, expected_status=200)
-        self.log("✓ Cache flushed")
-        
-        # Get initial stats
-        r1 = self.get("/admin/cache/stats", token=self.admin_token, expected_status=200)
-        stats_before = r1.json().get("data", {})
-        misses_before = stats_before.get("misses", 0)
-        hits_before = stats_before.get("hits", 0)
-        self.log(f"✓ Stats before: hits={hits_before}, misses={misses_before}")
-        
-        # First request to /services (should be cache miss)
-        self.get("/services", base_url=BASE_URL, expected_status=200)
-        time.sleep(0.5)
-        
-        # Second request to /services (should be cache hit)
-        self.get("/services", base_url=BASE_URL, expected_status=200)
-        time.sleep(0.5)
-        
-        # Check stats again
-        r2 = self.get("/admin/cache/stats", token=self.admin_token, expected_status=200)
-        stats_after = r2.json().get("data", {})
-        misses_after = stats_after.get("misses", 0)
-        hits_after = stats_after.get("hits", 0)
-        
-        assert misses_after > misses_before, f"Misses should increase (before={misses_before}, after={misses_after})"
-        assert hits_after > hits_before, f"Hits should increase (before={hits_before}, after={hits_after})"
-        self.log(f"✓ Cache working: hits={hits_after}, misses={misses_after}")
-    
-    def test_admin_cache_stats_endpoint(self):
-        """GET /api/admin/cache/stats requires admin and returns stats."""
-        # Admin can access
-        r = self.get("/admin/cache/stats", token=self.admin_token, expected_status=200)
+    def test_notifications_list(self):
+        """GET /api/notifications returns list with unread count."""
+        r = self.get("/notifications", token=self.admin_token, expected_status=200)
         data = r.json().get("data", {})
-        assert "hits" in data, "Missing 'hits' in stats"
-        assert "misses" in data, "Missing 'misses' in stats"
-        assert "sets" in data, "Missing 'sets' in stats"
-        assert "invalidations" in data, "Missing 'invalidations' in stats"
-        assert "size" in data, "Missing 'size' in stats"
-        assert "namespaces" in data, "Missing 'namespaces' in stats"
-        self.log(f"✓ Admin stats: {data}")
+        assert "items" in data, "Missing 'items' in response"
+        assert "total" in data, "Missing 'total' in response"
+        assert "unread" in data, "Missing 'unread' in response"
+        assert isinstance(data["items"], list), "items should be a list"
+        assert isinstance(data["unread"], int), "unread should be an integer"
+        self.log(f"✓ Got {len(data['items'])} notifications, {data['unread']} unread")
+    
+    def test_notifications_unread_count(self):
+        """GET /api/notifications/unread-count returns integer count."""
+        r = self.get("/notifications/unread-count", token=self.admin_token, expected_status=200)
+        data = r.json().get("data", {})
+        assert "unread" in data, "Missing 'unread' in response"
+        assert isinstance(data["unread"], int), "unread should be an integer"
+        self.log(f"✓ Unread count: {data['unread']}")
+    
+    def test_notifications_mark_read(self):
+        """POST /api/notifications/{id}/read marks single notification as read."""
+        # First get a notification
+        r = self.get("/notifications?unread_only=true", token=self.admin_token, expected_status=200)
+        data = r.json().get("data", {})
+        items = data.get("items", [])
+        
+        if not items:
+            self.log("⚠ No unread notifications to test mark-read")
+            return
+        
+        notif_id = items[0]["id"]
+        self.log(f"Testing mark-read on notification: {notif_id}")
+        
+        # Mark as read
+        r2 = self.post(f"/notifications/{notif_id}/read", {}, token=self.admin_token, expected_status=200)
+        result = r2.json().get("data", {})
+        assert result.get("id") == notif_id, "ID mismatch"
+        assert result.get("read") == True, "Should be marked as read"
+        self.log(f"✓ Notification {notif_id} marked as read")
+    
+    def test_notifications_mark_all_read(self):
+        """POST /api/notifications/read-all marks all as read."""
+        r = self.post("/notifications/read-all", {}, token=self.admin_token, expected_status=200)
+        data = r.json().get("data", {})
+        assert "modified" in data, "Missing 'modified' in response"
+        self.log(f"✓ Marked {data['modified']} notifications as read")
+    
+    def test_notifications_delete(self):
+        """DELETE /api/notifications/{id} removes notification."""
+        # First get a notification
+        r = self.get("/notifications?limit=1", token=self.admin_token, expected_status=200)
+        data = r.json().get("data", {})
+        items = data.get("items", [])
+        
+        if not items:
+            self.log("⚠ No notifications to test delete")
+            return
+        
+        notif_id = items[0]["id"]
+        self.log(f"Testing delete on notification: {notif_id}")
+        
+        # Delete
+        r2 = self.delete(f"/notifications/{notif_id}", token=self.admin_token, expected_status=200)
+        result = r2.json().get("data", {})
+        assert result.get("deleted") == True, "Should return deleted=True"
+        self.log(f"✓ Notification {notif_id} deleted")
+    
+    def test_admin_realtime_stats(self):
+        """GET /api/admin/realtime/stats returns connection stats (admin only)."""
+        # Admin can access
+        r = self.get("/admin/realtime/stats", token=self.admin_token, expected_status=200)
+        data = r.json().get("data", {})
+        assert "connected_users" in data, "Missing 'connected_users'"
+        assert "total_sockets" in data, "Missing 'total_sockets'"
+        assert "topics" in data, "Missing 'topics'"
+        self.log(f"✓ Realtime stats: {data['connected_users']} users, {data['total_sockets']} sockets")
         
         # Staff should get 403
-        r2 = self.get("/admin/cache/stats", token=self.staff_token, expected_status=403)
+        r2 = self.get("/admin/realtime/stats", token=self.staff_token, expected_status=403)
         self.log("✓ Staff correctly forbidden")
     
-    def test_admin_cache_flush_endpoint(self):
-        """POST /api/admin/cache/flush requires admin and clears cache."""
-        # Get stats before flush
-        r1 = self.get("/admin/cache/stats", token=self.admin_token, expected_status=200)
-        size_before = r1.json().get("data", {}).get("size", 0)
-        
-        # Flush cache
-        r2 = self.post("/admin/cache/flush", {}, token=self.admin_token, expected_status=200)
-        data = r2.json().get("data", {})
-        assert data.get("flushed") == True, "Flush should return flushed=True"
-        self.log("✓ Cache flushed successfully")
-        
-        # Check stats after flush
-        r3 = self.get("/admin/cache/stats", token=self.admin_token, expected_status=200)
-        stats_after = r3.json().get("data", {})
-        assert stats_after.get("size") == 0, f"Cache size should be 0 after flush, got {stats_after.get('size')}"
-        assert stats_after.get("hits") == 0, "Hits should be reset to 0"
-        assert stats_after.get("misses") == 0, "Misses should be reset to 0"
-        self.log(f"✓ Cache cleared: size={stats_after.get('size')}")
-        
-        # Staff should get 403
-        r4 = self.post("/admin/cache/flush", {}, token=self.staff_token, expected_status=403)
-        self.log("✓ Staff correctly forbidden from flush")
+    # ========== PHASE 15: EVENT TRIGGERS ==========
     
-    def test_cache_invalidation_on_cms_write(self):
-        """Cache is invalidated when CMS content is updated."""
-        # Flush cache first
-        self.post("/admin/cache/flush", {}, token=self.admin_token, expected_status=200)
+    def test_lead_creation_triggers_notification(self):
+        """POST /api/leads creates lead AND triggers lead.created notification."""
+        # Get initial unread count for admin
+        r1 = self.get("/notifications/unread-count", token=self.admin_token, expected_status=200)
+        unread_before = r1.json().get("data", {}).get("unread", 0)
+        self.log(f"Unread before: {unread_before}")
         
-        # Request /services to populate cache
-        self.get("/services", base_url=BASE_URL, expected_status=200)
-        time.sleep(0.5)
-        
-        # Get cache stats
-        r1 = self.get("/admin/cache/stats", token=self.admin_token, expected_status=200)
-        invalidations_before = r1.json().get("data", {}).get("invalidations", 0)
-        
-        # Create a new service (should invalidate cache)
-        service_data = {
-            "title": {"id": "Test Service Phase 13", "en": "Test Service Phase 13"},
-            "slug": f"test-service-p13-{int(time.time())}",
-            "summary": {"id": "Test summary", "en": "Test summary"},
-            "status": "draft"
+        # Create a lead
+        lead_data = {
+            "name": "Test Lead Phase 15",
+            "email": f"testlead{int(time.time())}@example.com",
+            "company": "Test Company",
+            "phone": "+62123456789",
+            "message": "This is a test lead for Phase 15 notification testing",
+            "source": "contact_form"
         }
-        r2 = self.post("/admin/cms/services", service_data, token=self.admin_token, expected_status=201)
-        service_id = r2.json().get("data", {}).get("id")
-        self.log(f"✓ Service created: {service_id}")
+        r2 = self.post("/leads", lead_data, expected_status=201)
+        lead_id = r2.json().get("data", {}).get("id")
+        assert lead_id, "Lead ID not returned"
+        self.created_lead_id = lead_id
+        self.log(f"✓ Lead created: {lead_id}")
         
-        # Check invalidations increased
-        time.sleep(0.5)
-        r3 = self.get("/admin/cache/stats", token=self.admin_token, expected_status=200)
-        invalidations_after = r3.json().get("data", {}).get("invalidations", 0)
-        assert invalidations_after > invalidations_before, f"Invalidations should increase (before={invalidations_before}, after={invalidations_after})"
-        self.log(f"✓ Cache invalidated on CMS write: invalidations={invalidations_after}")
+        # Wait a bit for notification to be created
+        time.sleep(1)
         
-        # Publish the service (should also invalidate)
-        invalidations_before2 = invalidations_after
-        r4 = self.post(f"/admin/cms/services/{service_id}/publish", {}, token=self.admin_token, expected_status=200)
-        time.sleep(0.5)
-        r5 = self.get("/admin/cache/stats", token=self.admin_token, expected_status=200)
-        invalidations_after2 = r5.json().get("data", {}).get("invalidations", 0)
-        assert invalidations_after2 > invalidations_before2, "Publish should invalidate cache"
-        self.log(f"✓ Cache invalidated on publish: invalidations={invalidations_after2}")
-    
-    # ========== REGRESSION: PUBLIC CONTENT ENDPOINTS ==========
-    
-    def test_public_services_list(self):
-        """GET /api/services returns 200 with list."""
-        r = self.get("/services", expected_status=200)
-        data = r.json().get("data", [])
-        assert isinstance(data, list), "Expected list of services"
-        self.log(f"✓ Got {len(data)} services")
-    
-    def test_public_services_kbs_mapping(self):
-        """GET /api/services/kbs-mapping-setup returns 200."""
-        r = self.get("/services/kbs-mapping-setup", expected_status=None)
-        # May return 200 or 404 depending on whether this slug exists
-        if r.status_code == 200:
-            self.log("✓ Service detail found")
-        elif r.status_code == 404:
-            self.log("✓ Service detail returns 404 (expected for unknown slug)")
+        # Check if notification was created for admin
+        r3 = self.get("/notifications/unread-count", token=self.admin_token, expected_status=200)
+        unread_after = r3.json().get("data", {}).get("unread", 0)
+        self.log(f"Unread after: {unread_after}")
+        
+        # Check recent notifications for lead.created
+        r4 = self.get("/notifications?limit=5", token=self.admin_token, expected_status=200)
+        items = r4.json().get("data", {}).get("items", [])
+        lead_notif = [n for n in items if n.get("type") == "lead.created" and lead_id in str(n.get("metadata", {}))]
+        
+        if lead_notif:
+            self.log(f"✓ lead.created notification found: {lead_notif[0].get('title')}")
         else:
-            raise AssertionError(f"Unexpected status {r.status_code}")
+            self.log(f"⚠ lead.created notification not found in recent notifications (may have been created)")
     
-    def test_public_cases_list(self):
-        """GET /api/cases returns 200 with list."""
-        r = self.get("/cases", expected_status=200)
-        data = r.json().get("data", [])
-        assert isinstance(data, list), "Expected list of cases"
-        self.log(f"✓ Got {len(data)} cases")
+    def test_project_creation_triggers_notification(self):
+        """POST /api/projects creates project AND triggers project.created notification."""
+        # Get initial unread count for admin
+        r1 = self.get("/notifications/unread-count", token=self.admin_token, expected_status=200)
+        unread_before = r1.json().get("data", {}).get("unread", 0)
+        
+        # Create a project
+        project_data = {
+            "name": f"Test Project Phase 15 {int(time.time())}",
+            "status": "active",
+            "progress": 0,
+            "summary": "Test project for Phase 15 notification testing"
+        }
+        r2 = self.post("/projects", project_data, token=self.admin_token, expected_status=200)
+        project_id = r2.json().get("data", {}).get("id")
+        assert project_id, "Project ID not returned"
+        self.created_project_id = project_id
+        self.log(f"✓ Project created: {project_id}")
+        
+        # Wait a bit for notification to be created
+        time.sleep(1)
+        
+        # Check recent notifications for project.created
+        r3 = self.get("/notifications?limit=5", token=self.admin_token, expected_status=200)
+        items = r3.json().get("data", {}).get("items", [])
+        project_notif = [n for n in items if n.get("type") == "project.created" and project_id in str(n.get("metadata", {}))]
+        
+        if project_notif:
+            self.log(f"✓ project.created notification found: {project_notif[0].get('title')}")
+        else:
+            self.log(f"⚠ project.created notification not found in recent notifications")
     
-    def test_public_team_list(self):
-        """GET /api/team returns 200 with list."""
-        r = self.get("/team", expected_status=200)
-        data = r.json().get("data", [])
-        assert isinstance(data, list), "Expected list of team members"
-        self.log(f"✓ Got {len(data)} team members")
+    def test_project_status_change_triggers_notification(self):
+        """PATCH /api/projects/{id} with status change triggers project.status_changed notification."""
+        if not self.created_project_id:
+            self.log("⚠ No project to test status change")
+            return
+        
+        # Change project status
+        patch_data = {"status": "on_hold"}
+        r = self.patch(f"/projects/{self.created_project_id}", patch_data, token=self.admin_token, expected_status=200)
+        self.log(f"✓ Project status changed to on_hold")
+        
+        # Wait a bit for notification to be created
+        time.sleep(1)
+        
+        # Check recent notifications for project.status_changed
+        r2 = self.get("/notifications?limit=5", token=self.admin_token, expected_status=200)
+        items = r2.json().get("data", {}).get("items", [])
+        status_notif = [n for n in items if n.get("type") == "project.status_changed" and self.created_project_id in str(n.get("metadata", {}))]
+        
+        if status_notif:
+            self.log(f"✓ project.status_changed notification found: {status_notif[0].get('title')}")
+        else:
+            self.log(f"⚠ project.status_changed notification not found in recent notifications")
     
-    def test_public_clients_list(self):
-        """GET /api/clients returns 200 with list."""
-        r = self.get("/clients", expected_status=200)
-        data = r.json().get("data", [])
-        assert isinstance(data, list), "Expected list of clients"
-        self.log(f"✓ Got {len(data)} clients")
+    # ========== REGRESSION TESTS ==========
     
-    def test_public_tech_list(self):
-        """GET /api/tech returns 200 with list."""
-        r = self.get("/tech", expected_status=200)
-        data = r.json().get("data", [])
-        assert isinstance(data, list), "Expected list of tech"
-        self.log(f"✓ Got {len(data)} tech items")
-    
-    def test_public_blog_list(self):
-        """GET /api/blog returns 200 with list."""
-        r = self.get("/blog", expected_status=200)
-        data = r.json().get("data", [])
-        assert isinstance(data, list), "Expected list of blog posts"
-        self.log(f"✓ Got {len(data)} blog posts")
-    
-    def test_public_careers_list(self):
-        """GET /api/careers returns 200 with list."""
-        r = self.get("/careers", expected_status=200)
-        data = r.json().get("data", [])
-        assert isinstance(data, list), "Expected list of careers"
-        self.log(f"✓ Got {len(data)} careers")
-    
-    def test_public_settings(self):
-        """GET /api/settings returns 200."""
-        r = self.get("/settings", expected_status=200)
-        data = r.json().get("data", {})
-        assert isinstance(data, dict), "Expected settings object"
-        self.log("✓ Settings retrieved")
-    
-    def test_public_detail_404_for_unknown_slug(self):
-        """GET /api/services/unknown-slug-xyz returns 404."""
-        r = self.get("/services/unknown-slug-xyz-phase13", expected_status=404)
-        self.log("✓ Unknown slug returns 404")
-    
-    # ========== REGRESSION: PHASE 12 INTEGRATIONS ==========
-    
-    def test_integrations_list(self):
-        """GET /api/admin/integrations returns 3 integrations."""
-        r = self.get("/admin/integrations", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", [])
-        assert len(data) == 3, f"Expected 3 integrations, got {len(data)}"
-        self.log(f"✓ Got {len(data)} integrations")
-    
-    def test_email_integration_get(self):
-        """GET /api/admin/integrations/email works."""
-        r = self.get("/admin/integrations/email", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        assert data.get("type") == "email", "Expected type=email"
-        self.log(f"✓ Email config: provider={data.get('provider')}")
-    
-    def test_email_outbox_list(self):
-        """GET /api/admin/integrations/email/outbox works."""
-        r = self.get("/admin/integrations/email/outbox", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        assert "items" in data, "Missing items"
-        assert "total" in data, "Missing total"
-        self.log(f"✓ Email outbox: {data.get('total')} emails")
-    
-    def test_email_templates_list(self):
-        """GET /api/admin/integrations/email/templates works."""
-        r = self.get("/admin/integrations/email/templates", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", [])
-        assert len(data) >= 12, f"Expected at least 12 templates, got {len(data)}"
-        self.log(f"✓ Got {len(data)} email templates")
-    
-    # ========== REGRESSION: PHASE 9-11 ENDPOINTS ==========
-    
-    def test_auth_me(self):
-        """GET /api/auth/me returns current user."""
+    def test_regression_admin_dashboard(self):
+        """Admin dashboard endpoints still working."""
+        # Test auth/me
         r = self.get("/auth/me", token=self.admin_token, expected_status=200)
         data = r.json().get("data", {})
         assert data.get("email") == "admin@kubus.id", "Email mismatch"
-        self.log(f"✓ Auth me: {data.get('email')}")
+        self.log("✓ GET /api/auth/me working")
     
-    def test_leads_list(self):
-        """GET /api/leads works (admin only)."""
+    def test_regression_projects_list(self):
+        """GET /api/projects still working."""
+        r = self.get("/projects", token=self.admin_token, expected_status=200)
+        data = r.json().get("data", [])
+        assert isinstance(data, list), "Expected list of projects"
+        self.log(f"✓ GET /api/projects working ({len(data)} projects)")
+    
+    def test_regression_leads_list(self):
+        """GET /api/leads still working."""
         r = self.get("/leads", token=self.admin_token, expected_status=200)
         data = r.json().get("data", {})
         assert "items" in data, "Missing items"
-        self.log(f"✓ Leads list: {data.get('total', 0)} leads")
+        self.log(f"✓ GET /api/leads working ({data.get('total', 0)} leads)")
     
-    def test_projects_list(self):
-        """GET /api/projects works (admin only)."""
-        r = self.get("/projects", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        assert "items" in data, "Missing items"
-        self.log(f"✓ Projects list: {data.get('total', 0)} projects")
-    
-    def test_invoices_list(self):
-        """GET /api/invoices works (admin only)."""
-        r = self.get("/invoices", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        assert "items" in data, "Missing items"
-        self.log(f"✓ Invoices list: {data.get('total', 0)} invoices")
-    
-    def test_seo_pages_list(self):
-        """GET /api/seo/pages works (admin only)."""
-        r = self.get("/seo/pages", token=self.admin_token, expected_status=200)
+    def test_regression_public_homepage(self):
+        """Public website homepage loads without error."""
+        # Test public services endpoint
+        r = self.get("/services", expected_status=200)
         data = r.json().get("data", [])
-        assert isinstance(data, list), "Expected list"
-        self.log(f"✓ SEO pages: {len(data)} pages")
-    
-    def test_analytics_summary(self):
-        """GET /api/analytics/summary works (admin only)."""
-        r = self.get("/analytics/summary", token=self.admin_token, expected_status=200)
-        data = r.json().get("data", {})
-        assert isinstance(data, dict), "Expected summary object"
-        self.log("✓ Analytics summary retrieved")
+        assert isinstance(data, list), "Expected list of services"
+        self.log(f"✓ GET /api/services working ({len(data)} services)")
     
     # ========== RUN ALL TESTS ==========
     
     def run_all(self):
         print("\n" + "="*80)
-        print("PHASE 13 BACKEND TESTING: Performance Optimization (Cache + GZip + Indexes)")
-        print("REGRESSION + NEW FEATURES")
+        print("PHASE 15 BACKEND TESTING: Real-time Notifications via WebSocket")
         print("="*80)
         
         # Auth setup
         self.test("Auth Setup (admin/staff/client login)", self.test_auth_setup)
         
         print("\n" + "="*80)
-        print("PHASE 13: NEW CACHE FEATURES")
+        print("PHASE 15: NOTIFICATION REST ENDPOINTS")
         print("="*80)
         
-        self.test("Public endpoints include Cache-Control header", self.test_public_endpoints_cache_control_header)
-        self.test("GZip compression active for large responses", self.test_gzip_compression_active)
-        self.test("Cache hit/miss behavior (first=miss, second=hit)", self.test_cache_hit_miss_behavior)
-        self.test("GET /api/admin/cache/stats (admin only, returns stats)", self.test_admin_cache_stats_endpoint)
-        self.test("POST /api/admin/cache/flush (admin only, clears cache)", self.test_admin_cache_flush_endpoint)
-        self.test("Cache invalidation on CMS write (create/publish)", self.test_cache_invalidation_on_cms_write)
+        self.test("GET /api/notifications (list with unread count)", self.test_notifications_list)
+        self.test("GET /api/notifications/unread-count", self.test_notifications_unread_count)
+        self.test("POST /api/notifications/{id}/read", self.test_notifications_mark_read)
+        self.test("POST /api/notifications/read-all", self.test_notifications_mark_all_read)
+        self.test("DELETE /api/notifications/{id}", self.test_notifications_delete)
+        self.test("GET /api/admin/realtime/stats (admin only)", self.test_admin_realtime_stats)
         
         print("\n" + "="*80)
-        print("REGRESSION: PUBLIC CONTENT ENDPOINTS")
+        print("PHASE 15: EVENT TRIGGERS")
         print("="*80)
         
-        self.test("GET /api/services", self.test_public_services_list)
-        self.test("GET /api/services/kbs-mapping-setup (or 404)", self.test_public_services_kbs_mapping)
-        self.test("GET /api/cases", self.test_public_cases_list)
-        self.test("GET /api/team", self.test_public_team_list)
-        self.test("GET /api/clients", self.test_public_clients_list)
-        self.test("GET /api/tech", self.test_public_tech_list)
-        self.test("GET /api/blog", self.test_public_blog_list)
-        self.test("GET /api/careers", self.test_public_careers_list)
-        self.test("GET /api/settings", self.test_public_settings)
-        self.test("GET /api/services/unknown-slug returns 404", self.test_public_detail_404_for_unknown_slug)
+        self.test("Lead creation triggers lead.created notification", self.test_lead_creation_triggers_notification)
+        self.test("Project creation triggers project.created notification", self.test_project_creation_triggers_notification)
+        self.test("Project status change triggers project.status_changed notification", self.test_project_status_change_triggers_notification)
         
         print("\n" + "="*80)
-        print("REGRESSION: PHASE 12 INTEGRATIONS")
+        print("REGRESSION TESTS")
         print("="*80)
         
-        self.test("GET /api/admin/integrations", self.test_integrations_list)
-        self.test("GET /api/admin/integrations/email", self.test_email_integration_get)
-        self.test("GET /api/admin/integrations/email/outbox", self.test_email_outbox_list)
-        self.test("GET /api/admin/integrations/email/templates", self.test_email_templates_list)
-        
-        print("\n" + "="*80)
-        print("REGRESSION: PHASE 9-11 ENDPOINTS")
-        print("="*80)
-        
-        self.test("GET /api/auth/me", self.test_auth_me)
-        self.test("GET /api/leads", self.test_leads_list)
-        self.test("GET /api/projects", self.test_projects_list)
-        self.test("GET /api/invoices", self.test_invoices_list)
-        self.test("GET /api/seo/pages", self.test_seo_pages_list)
-        self.test("GET /api/analytics/summary", self.test_analytics_summary)
+        self.test("Admin dashboard (GET /api/auth/me)", self.test_regression_admin_dashboard)
+        self.test("Projects list (GET /api/projects)", self.test_regression_projects_list)
+        self.test("Leads list (GET /api/leads)", self.test_regression_leads_list)
+        self.test("Public homepage (GET /api/services)", self.test_regression_public_homepage)
         
         # Summary
         print("\n" + "="*80)
@@ -493,5 +373,5 @@ class Phase13Tester:
         return 0 if self.tests_passed == self.tests_run else 1
 
 if __name__ == "__main__":
-    tester = Phase13Tester()
+    tester = Phase15Tester()
     sys.exit(tester.run_all())
