@@ -1,34 +1,34 @@
 [
   {
-    "content": "Phase 18A: Modernize H1/H2 font - Replace Clash Display with modern alternative",
-    "status": "pending"
+    "content": "Phase 18A: Modernize H1/H2 font - Replace Clash Display with Space Grotesk",
+    "status": "completed"
   },
   {
     "content": "Phase 18B.1: Fix loading stuck issue on Services/Cases pages",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 18B.2: Add timeout fallback and skeleton loaders",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 18C: Simplify hero layout and improve CTA hierarchy",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 18D: Improve content clarity - shorten copy and value prop",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 18E: Mobile responsive testing and fixes",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 18F: Performance polish - lazy-load 3D and reduced-motion",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 18G: End-to-end testing and regression check",
-    "status": "pending"
+    "status": "in_progress"
   }
 ]

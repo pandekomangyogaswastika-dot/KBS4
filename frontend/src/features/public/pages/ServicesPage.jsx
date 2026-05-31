@@ -2,7 +2,8 @@ import { useTranslation } from "react-i18next";
 import { useFetch } from "@/lib/apiClient";
 import PageHeader from "@/components/PageHeader";
 import ServicesGrid from "@/features/public/blocks/ServicesGrid";
-import { LoadingView, ErrorView, EmptyView } from "@/components/StateViews";
+import { ErrorView, EmptyView } from "@/components/StateViews";
+import { ServicesGridSkeleton } from "@/components/SkeletonLoaders";
 import SEOHead from "@/components/SEOHead";
 
 export default function ServicesPage() {
@@ -18,7 +19,7 @@ export default function ServicesPage() {
       />
       <PageHeader eyebrow={t("sections.constellations")} title={t("nav.services")} intro={t("pages.servicesIntro")} />
       <div className="kti-container pb-24">
-        {loading && <LoadingView />}
+        {loading && <ServicesGridSkeleton count={6} />}
         {error && <ErrorView message={error} onRetry={reload} />}
         {!loading && !error && (data?.length ? <ServicesGrid items={data} /> : <EmptyView />)}
       </div>

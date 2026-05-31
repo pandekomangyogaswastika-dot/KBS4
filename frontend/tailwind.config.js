@@ -8,7 +8,7 @@ module.exports = {
   theme: {
         extend: {
                 fontFamily: {
-                        display: ['"Clash Display"', 'Sora', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        display: ['"Space Grotesk"', 'Sora', 'ui-sans-serif', 'system-ui', 'sans-serif'],
                         sans: ['Sora', 'Figtree', 'ui-sans-serif', 'system-ui', 'sans-serif'],
                         hud: ['"Chakra Petch"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
                 },

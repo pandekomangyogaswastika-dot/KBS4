@@ -2,7 +2,8 @@ import { useTranslation } from "react-i18next";
 import { useFetch } from "@/lib/apiClient";
 import PageHeader from "@/components/PageHeader";
 import CasesGrid from "@/features/public/blocks/CasesGrid";
-import { LoadingView, ErrorView, EmptyView } from "@/components/StateViews";
+import { ErrorView, EmptyView } from "@/components/StateViews";
+import { CasesGridSkeleton } from "@/components/SkeletonLoaders";
 import SEOHead from "@/components/SEOHead";
 
 export default function CasesPage() {
@@ -17,7 +18,7 @@ export default function CasesPage() {
       />
       <PageHeader eyebrow={t("sections.worlds")} title={t("nav.cases")} intro={t("pages.casesIntro")} />
       <div className="kti-container pb-24">
-        {loading && <LoadingView />}
+        {loading && <CasesGridSkeleton count={6} />}
         {error && <ErrorView message={error} onRetry={reload} />}
         {!loading && !error && (data?.length ? <CasesGrid items={data} /> : <EmptyView />)}
       </div>

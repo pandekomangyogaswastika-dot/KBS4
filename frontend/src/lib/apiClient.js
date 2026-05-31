@@ -65,33 +65,64 @@ api.interceptors.response.use(
 );
 
 // Simple fetch hook for GET endpoints returning {success, data} (+ optional meta).
-export function useFetch(path, deps = []) {
+// Phase 18B: Added timeout protection (10s default)
+export function useFetch(path, deps = [], options = {}) {
   const [data, setData] = useState(null);
   const [meta, setMeta] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const mounted = useRef(true);
+  const timeoutRef = useRef(null);
+
+  const { timeout = 10000 } = options; // 10 second default timeout
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    // Set timeout protection
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutRef.current = setTimeout(() => {
+        reject(new Error('Request timeout - silakan refresh halaman atau coba lagi'));
+      }, timeout);
+    });
+    
     try {
-      const res = await api.get(path);
+      const apiPromise = api.get(path);
+      const res = await Promise.race([apiPromise, timeoutPromise]);
+      
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
       if (mounted.current) {
         setData(res.data?.data ?? null);
         setMeta(res.data?.meta ?? null);
       }
     } catch (err) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
       if (mounted.current) setError(apiError(err, "Gagal memuat data"));
     } finally {
       if (mounted.current) setLoading(false);
     }
-  }, [path]);
+  }, [path, timeout]);
 
   useEffect(() => {
     mounted.current = true;
     load();
-    return () => { mounted.current = false; };
+    return () => { 
+      mounted.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 
