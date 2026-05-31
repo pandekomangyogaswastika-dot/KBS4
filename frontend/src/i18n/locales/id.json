@@ -222,7 +222,8 @@
     "roleAdmin": "Admin",
     "roleStaff": "Staff",
     "roleClient": "Klien",
-    "loadError": "Gagal memuat data"
+    "loadError": "Gagal memuat data",
+    "demoSessions": "Sesi Demo"
   },
   "cms": {
     "add": "Tambah",

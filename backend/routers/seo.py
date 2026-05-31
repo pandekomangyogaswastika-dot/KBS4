@@ -76,7 +76,6 @@ async def get_sitemap():
                 lastmod = service.get("updated_at") or service.get("created_at")
                 add_url(f"/services/{slug}", lastmod=lastmod, changefreq="weekly", priority="0.8")
     except Exception as e:
-        print(f"Error fetching services for sitemap: {e}")
     
     # Cases list page
     add_url("/cases", changefreq="weekly", priority="0.9")
@@ -90,7 +89,6 @@ async def get_sitemap():
                 lastmod = case.get("updated_at") or case.get("created_at")
                 add_url(f"/cases/{slug}", lastmod=lastmod, changefreq="monthly", priority="0.7")
     except Exception as e:
-        print(f"Error fetching cases for sitemap: {e}")
     
     # Blog list page
     add_url("/blog", changefreq="daily", priority="0.9")
@@ -104,7 +102,6 @@ async def get_sitemap():
                 lastmod = post.get("updated_at") or post.get("created_at")
                 add_url(f"/blog/{slug}", lastmod=lastmod, changefreq="monthly", priority="0.7")
     except Exception as e:
-        print(f"Error fetching blog posts for sitemap: {e}")
     
     # Static pages
     add_url("/tech", changefreq="monthly", priority="0.6")
@@ -121,7 +118,6 @@ async def get_sitemap():
                 lastmod = career.get("updated_at") or career.get("created_at")
                 add_url(f"/career/{slug}", lastmod=lastmod, changefreq="weekly", priority="0.6")
     except Exception as e:
-        print(f"Error fetching career posts for sitemap: {e}")
     
     # Close XML
     xml_lines.append("</urlset>")

@@ -33,6 +33,7 @@ async def list_leads(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
     status: str | None = None,
+    source: str | None = None,
     search: str | None = None,
     _user=Depends(require_role("admin", "staff")),
 ):
@@ -40,6 +41,8 @@ async def list_leads(
     flt = {"voided": {"$ne": True}}
     if status:
         flt["status"] = status
+    if source:
+        flt["source"] = source
     if search:
         flt["$or"] = [
             {"name": {"$regex": re.escape(search), "$options": "i"}},

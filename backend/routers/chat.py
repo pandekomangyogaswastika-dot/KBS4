@@ -141,7 +141,6 @@ async def send_message(thread_id: str, payload: MessageIn, user=Depends(get_curr
                 metadata={"thread_id": thread_id, "message_id": doc["id"]},
             )
     except Exception as exc:  # noqa: BLE001
-        print(f"[chat] inapp chat.message failed: {exc}")
     return success_response(msg)
 
 

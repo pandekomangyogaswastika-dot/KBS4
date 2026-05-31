@@ -76,7 +76,7 @@ async def create_demo_session(payload: DemoSessionRequest) -> Dict[str, Any]:
 
     # 1. Simpan sebagai lead (lead generation dari demo gate)
     lead_id = new_id("lead")
-    await _db.leads.insert_one({
+    await _db.crm_leads.insert_one({
         "id": lead_id,
         "name": payload.name,
         "email": payload.email,

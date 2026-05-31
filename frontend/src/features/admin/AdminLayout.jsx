@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import {
   LayoutDashboard, Inbox, Users as UsersIcon, LogOut, Globe, Menu, ShieldCheck, Image as ImageIcon,
   Boxes, Briefcase, FileText, Cpu, Building2, LayoutTemplate, Settings, FolderKanban, ClipboardList,
-  MessageSquare, BotMessageSquare, BarChart3, Search, Plug, Mailbox,
+  MessageSquare, BotMessageSquare, BarChart3, Search, Plug, Mailbox, MonitorPlay,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
@@ -31,6 +31,7 @@ function useNav(role) {
       key: "sectionCrm",
       items: [
         { to: "/portal/admin/leads", icon: Inbox, label: "admin.leads", testid: ADMIN.navLeads, roles: ["admin", "staff"] },
+        { to: "/portal/admin/demo-sessions", icon: MonitorPlay, label: "admin.demoSessions", testid: "admin-nav-demo-sessions", roles: ["admin", "staff"] },
         { to: "/portal/admin/assessments", icon: ClipboardList, label: "assess.title", testid: "admin-nav-assessments", roles: ["admin", "staff"] },
         { to: "/portal/admin/clients", icon: Building2, label: "portal.clients", testid: "admin-nav-clients", roles: ["admin", "staff"] },
       ],

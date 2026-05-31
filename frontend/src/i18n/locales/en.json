@@ -222,7 +222,8 @@
     "roleAdmin": "Admin",
     "roleStaff": "Staff",
     "roleClient": "Client",
-    "loadError": "Failed to load data"
+    "loadError": "Failed to load data",
+    "demoSessions": "Demo Sessions"
   },
   "cms": {
     "add": "Add",
@@ -448,7 +449,7 @@
   },
   "integrations": {
     "pageTitle": "Third-party Integrations",
-    "pageSubtitle": "Configure your email provider, payment gateway, and object storage. All credentials are stored encrypted in the database \u2014 never in .env files.",
+    "pageSubtitle": "Configure your email provider, payment gateway, and object storage. All credentials are stored encrypted in the database — never in .env files.",
     "tabs": {
       "email": "Email",
       "payment": "Payment",

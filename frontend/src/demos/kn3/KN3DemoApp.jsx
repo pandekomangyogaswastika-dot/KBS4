@@ -23,7 +23,7 @@ import {
   Archive, Boxes, Clock3, PackageCheck, Sparkles, Warehouse,
 } from "lucide-react";
 
-export default function KN3DemoApp({ sessionId, sessionData, onExit }) {
+export default function KN3DemoApp({ sessionId, sessionData, onExit, autoStartTour = false }) {
   const [activeView, setActiveView] = useState("sales");
   const [search, setSearch] = useState("");
   const [data, setData] = useState({ products: [], customers: [], orders: [], warehouses: [], metrics: {} });
@@ -68,7 +68,13 @@ export default function KN3DemoApp({ sessionId, sessionData, onExit }) {
   // Auto-init saat mount
   useEffect(() => {
     if (sessionId && !initialized) {
-      actions.initDemo().then(() => setInitialized(true));
+      actions.initDemo().then(() => {
+        setInitialized(true);
+        // Auto-start guided tour jika diminta (dari DemoPage)
+        if (autoStartTour) {
+          setTimeout(() => setActiveTour("sales"), 800);
+        }
+      });
     }
   }, [sessionId]); // eslint-disable-line
 

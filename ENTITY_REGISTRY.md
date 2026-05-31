@@ -25,7 +25,7 @@
 |------------|-----------|-------------|
 | `cms_services` | Layanan (Constellations) | id, slug(unique), title{}, summary{}, body{}, icon, category, order, featured, status |
 | `cms_home_blocks` | Section interaktif home (process/tiers/gauges/secure) | id, key(unique), kind, title{}, subtitle{}, items[], order, status |
-| `cms_cases` | Studi kasus (Explored Worlds), bisa link project | id, slug(unique), title{}, client_name, industry, summary{}, body{}, cover, gallery[], results[], tech[], project_id?, status |
+| `cms_cases` | Studi kasus (Explored Worlds) | id, slug(unique), title{}, client_name, industry, summary{}, body{}, cover, gallery[], results[], tech[], project_id?, status, **demo_enabled**, **demo_slug**, **demo_label_id**, **demo_timeout_minutes** |
 | `cms_team` | Anggota tim (The Crew) | id, name, role{}, bio{}, photo, socials, order, status |
 | `cms_clients` | Klien (Star Map) | id, name, logo, url, order, status |
 | `cms_tech` | Tech stack (The Engine) | id, name, category, logo, order |
@@ -36,7 +36,7 @@
 ## CRM
 | Collection | Deskripsi | Field kunci |
 |------------|-----------|-------------|
-| `crm_leads` | Kontak form + lead dari assessment | id, source, name, email, company?, message, assessment_session_id?, status, created_at |
+| `crm_leads` | Kontak form + lead dari assessment + lead dari demo gate form | id, source(contact_form\|assessment\|demo_gate), name, email, company?, message, assessment_session_id?, demo_app?, status, created_at |
 
 ## ASSESSMENT (Discovery)
 | Collection | Deskripsi | Field kunci |
@@ -52,7 +52,7 @@
 | `pm_projects` | Project klien | id, code, name, client_id, staff_ids[], status, progress, start_date, due_date, summary |
 | `pm_milestones` | Milestone/timeline | id, project_id, title, description, status(todo/in_progress/done), order, due_date, completed_at |
 | `pm_documents` | Deliverable/dokumen | id, project_id, name, path, content_type, size, uploaded_by, created_at |
-| `pm_approvals` | Approval/feedback milestone | id, project_id, milestone_id, status(pending/approved/changes_requested), feedback, decided_by, decided_at |
+| `pm_approvals` | Approval/feedback milestone — termasuk e-sign | id, project_id, milestone_id, status(pending/approved/changes_requested), feedback, decided_by, decided_at |
 
 ## BILLING
 | Collection | Deskripsi | Field kunci |
@@ -66,9 +66,43 @@
 | `chat_messages` | Pesan | id, thread_id, sender_id, body, attachments[], created_at |
 | `ai_conversations` | Riwayat AI (advisor publik + portal) | id, surface(public/portal), user_id?, visitor_id?, messages[], created_at, updated_at |
 
+## E-SIGN & AUDIT (Fase 9)
+| Collection | Deskripsi | Field kunci |
+|------------|-----------|-------------|
+| `approval_signatures` | Tanda tangan digital (e-sign) pada approval | id, approval_id, project_id, signer_id, signer_name, signer_role, signature_data(base64), ip_address, signed_at, certificate_url |
+| `approval_audit_logs` | Log jejak approval + e-sign immutable | id, approval_id, actor_id, actor_name, action, meta, timestamp |
+
+## NOTIFICATIONS (Fase 15)
+| Collection | Deskripsi | Field kunci |
+|------------|-----------|-------------|
+| `notifications` | Notifikasi in-app per user | id, user_id, kind, title, body, action_url?, read, created_at |
+| `notification_preferences` | Preferensi notif per user | id, user_id, email_enabled, inapp_enabled, topics[] |
+
+## EMAIL (Fase 12)
+| Collection | Deskripsi | Field kunci |
+|------------|-----------|-------------|
+| `email_templates` | Template email (HTML + plain text) | id, slug(unique), subject, html_body, text_body, variables[], created_at |
+| `email_outbox` | Antrian email terkirim | id, template_slug, to, cc?, subject, vars, status(queued/sent/failed), sent_at |
+| `email_events` | Webhook events dari email provider | id, outbox_id?, event_type, provider_data, received_at |
+
+## INTEGRATION SETTINGS (Fase 12)
+| Collection | Deskripsi | Field kunci |
+|------------|-----------|-------------|
+| `integration_settings` | Konfigurasi integrasi eksternal (SMTP, storage, dll) | id, service, config(encrypted), enabled, updated_at |
+
+## DEMO SANDBOX (Fase 16)
+| Collection | Deskripsi | Field kunci |
+|------------|-----------|-------------|
+| `demo_sessions` | Sesi demo sandbox per user (TTL 90 menit) | id, short_id, lead_id, name, email, company?, app_slug, db_name, expires_at, created_at, seeded, seed_summary |
+
+> **Demo databases**: Setiap sesi demo mendapat isolated MongoDB database `demo_kn3_{short_id}`. Database di-drop otomatis saat sesi expired. BUKAN collection di `test_database`.
+
 ---
 
 ## FORBIDDEN / RESERVED (jangan dipakai — melanggar SSOT)
 `users`, `services`, `cases`, `projects`, `invoices`, `messages`, `leads`, `team`, `clients`, `blog`, `posts`, `sessions`, `templates`, `documents`, `files`, `content` (tanpa prefix domain). Gunakan versi ber-prefix di atas.
 
-_Status: cms_services, cms_cases, cms_team, cms_clients, cms_tech, cms_blog, cms_careers, cms_pages, crm_leads, ai_conversations DIBUAT & ter-seed (Fase 2). system_users, media_folders, media_assets, media_usage, cms_home_blocks DIBUAT di Fase 3 (auth/RBAC + Media Library + Advanced CMS). assessment_templates, assessment_sessions, assessment_answers, assessment_attachments DIBUAT di Fase 4 (Assessment Module; template "it-solution-discovery" ter-seed). Sisanya dibuat saat fase masing-masing._
+---
+
+_Status terakhir diupdate: Phase 16 SELESAI (2026-05-31)._
+_Collections aktif: system_users, media_assets, media_usage, cms_*, crm_leads, assessment_*, pm_*, billing_invoices, chat_*, ai_conversations, approval_signatures, approval_audit_logs, notifications, notification_preferences, email_templates, email_outbox, email_events, integration_settings, demo_sessions._

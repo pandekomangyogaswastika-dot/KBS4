@@ -41,6 +41,7 @@ const AdminAnalytics = lazy(() => import("@/features/admin/pages/AdminAnalytics"
 const AdminSeoDashboard = lazy(() => import("@/features/admin/pages/AdminSeoDashboard"));
 const AdminIntegrations = lazy(() => import("@/features/admin/pages/AdminIntegrations"));
 const AdminEmailOutbox = lazy(() => import("@/features/admin/pages/AdminEmailOutbox"));
+const AdminDemoSessions = lazy(() => import("@/features/admin/pages/AdminDemoSessions"));
 
 // Client portal
 const ClientLayout = lazy(() => import("@/features/portal/client/ClientLayout"));
@@ -109,6 +110,7 @@ function App() {
               >
                 <Route index element={<AdminDashboard />} />
                 <Route path="leads" element={<AdminLeads />} />
+                <Route path="demo-sessions" element={<AdminDemoSessions />} />
                 <Route path="media" element={<MediaLibrary />} />
                 <Route path="cms/:resource" element={<CmsResourcePage />} />
                 <Route path="settings" element={<CmsSettings />} />

@@ -102,6 +102,7 @@ export default function DemoPage({ appSlug }) {
       sessionId={sessionId}
       sessionData={sessionData}
       onExit={handleExit}
+      autoStartTour={true}
     />
   );
 }

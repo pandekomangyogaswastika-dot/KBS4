@@ -192,7 +192,6 @@ Return ONLY a JSON object with these exact keys:
         return success_response(result)
         
     except Exception as e:
-        print(f"Error generating meta: {e}")
         return error_response("SEO_GENERATION_ERROR", f"Failed to generate SEO metadata: {str(e)}")
 
 
@@ -273,7 +272,6 @@ Return ONLY a JSON object:
         return success_response(result)
         
     except Exception as e:
-        print(f"Error analyzing content: {e}")
         return error_response("SEO_ANALYSIS_ERROR", f"Failed to analyze content: {str(e)}")
 
 
@@ -344,7 +342,6 @@ Return ONLY a JSON object:
         return success_response(result)
         
     except Exception as e:
-        print(f"Error extracting keywords: {e}")
         return error_response("KEYWORD_EXTRACTION_ERROR", f"Failed to extract keywords: {str(e)}")
 
 
@@ -410,7 +407,6 @@ Return ONLY a JSON object:
         return success_response(result)
         
     except Exception as e:
-        print(f"Error generating alt text: {e}")
         return error_response("ALT_TEXT_GENERATION_ERROR", f"Failed to generate alt text: {str(e)}")
 
 
@@ -630,5 +626,4 @@ async def export_page_report_pdf(
         )
         
     except Exception as e:
-        print(f"Error generating PDF: {e}")
         return error_response("PDF_ERROR", str(e))

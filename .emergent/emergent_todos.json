@@ -1,26 +1,18 @@
 [
   {
-    "content": "Phase 16A: Demo Session Engine backend (demo_sessions, TTL, seed generik WMS)",
+    "content": "P2: Update ENTITY_REGISTRY + KTI_09 + PRD + plan.md + SESSION_HANDOFF",
     "status": "completed"
   },
   {
-    "content": "Phase 16B: Copy + mount KN3 routers di /api/demo/kn3/ dengan session-aware DB",
-    "status": "completed"
+    "content": "P3: Admin demo monitoring page (active sessions + leads dari demo)",
+    "status": "in_progress"
   },
   {
-    "content": "Phase 16C: Copy + adapt KN3 frontend ke /src/demos/kn3/ + lazy route",
-    "status": "completed"
+    "content": "P3: Auto-start guided tour saat demo pertama dibuka",
+    "status": "pending"
   },
   {
-    "content": "Phase 16D: Case Study gate form + CTA button + Admin CMS config",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 16E: Demo banner + lead capture CTA setelah tour selesai",
-    "status": "completed"
-  },
-  {
-    "content": "End-to-end testing Phase 16 dengan testing_agent_v3",
-    "status": "completed"
+    "content": "Verifikasi compliance script + end-to-end testing",
+    "status": "pending"
   }
 ]

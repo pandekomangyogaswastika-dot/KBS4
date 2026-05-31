@@ -188,6 +188,5 @@ async def ws_notifications(websocket: WebSocket, token: str = Query(...)):
     except WebSocketDisconnect:
         pass
     except Exception as exc:  # noqa: BLE001
-        print(f"[ws_notifications] error: {exc}")
     finally:
         manager.disconnect(websocket)

@@ -39,7 +39,7 @@ async def create_lead(payload: LeadIn):
     try:
         await notify_lead_created(doc)
     except Exception as exc:  # noqa: BLE001
-        print(f"[leads] notify_lead_created failed: {exc}")
+        pass  # notify_lead_created failed silently
     # Phase 15: in-app realtime notification to admin/staff
     try:
         await inapp.create_for_admin_staff(
@@ -50,5 +50,5 @@ async def create_lead(payload: LeadIn):
             metadata={"lead_id": doc["id"], "email": doc.get("email"), "company": doc.get("company")},
         )
     except Exception as exc:  # noqa: BLE001
-        print(f"[leads] inapp lead.created failed: {exc}")
+        pass  # inapp lead.created failed silently
     return success_response({"id": doc["id"], "message": "Lead received"})
